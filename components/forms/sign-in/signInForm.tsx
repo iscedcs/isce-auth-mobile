@@ -21,9 +21,8 @@ import { TbLoader2 } from "react-icons/tb";
 import { toast } from "sonner";
 import z from "zod";
 import { signInFormSchema } from "@/schemas/sign-in";
-import { defaultUserRoute } from "@/routes";
 import AuthHeader from "@/components/shared/authHeader";
-import { login } from "@/actions/auth";
+import { signIn } from "next-auth/react";
 
 export type signInValues = z.infer<typeof signInFormSchema>;
 
@@ -71,7 +70,7 @@ export default function SignInForm() {
   const handleSubmit = async (data: signInValues) => {
     try {
       setIsLoading(true);
-      const res = await login({
+      const res = await signIn("credentials", {
         email: data.email,
         password: data.password,
       });
@@ -80,7 +79,7 @@ export default function SignInForm() {
         toast.success("Account Logged In", {
           description: "This account has successfully been logged in",
         });
-        router.push(defaultUserRoute);
+        router.push("/");
       } else {
         toast.error("Login failed", {
           description: "Invalid email or password",

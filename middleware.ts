@@ -1,65 +1,43 @@
 import NextAuth from "next-auth";
 import { getToken } from "next-auth/jwt";
-
-import { userType } from "./lib/types/auth";
-import {
-  apiAuthPrefix,
-  authRoutes,
-  defaultBusinessUserRoute,
-  defaultUserRoute,
-  publicRoutes,
-} from "./routes";
+import { NextResponse } from "next/server";
 import authConfig from "./auth.config";
+import { apiAuthPrefix, authRoutes, publicRoutes } from "./routes";
 
 const { auth } = NextAuth(authConfig);
 
 export default auth(async (req) => {
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
   const { nextUrl } = req;
   const pathname = nextUrl.pathname;
 
   const isLoggedIn = !!req.auth;
 
-  const userRole: userType | undefined = token?.userType as
-    | userType
-    | undefined;
-
   const isApiRoute = pathname.startsWith(apiAuthPrefix);
   const isPublicRoute = publicRoutes.includes(pathname);
   const isAuthRoute = authRoutes.includes(pathname);
+  if (pathname.startsWith("/api")) return NextResponse.next();
 
-  if (isApiRoute) {
-    return;
-  }
+  if (isApiRoute) return NextResponse.next();
+
+  if (isPublicRoute) return NextResponse.next();
 
   if (isAuthRoute) {
     if (isLoggedIn) {
-      if (userRole === "USER") {
-        return Response.redirect(new URL(defaultUserRoute, nextUrl));
-      }
-      if (userRole === "BUSINESS_USER") {
-        return Response.redirect(new URL(defaultBusinessUserRoute, nextUrl));
-      }
+      return NextResponse.redirect(new URL("/dashboard", nextUrl));
     }
-
-    return;
-  }
-
-  if (isLoggedIn && userRole === "USER" && isPublicRoute) {
-    return Response.redirect(new URL(defaultUserRoute, nextUrl));
-  }
-  if (isLoggedIn && userRole === "BUSINESS_USER" && isPublicRoute) {
-    return Response.redirect(new URL(defaultBusinessUserRoute, nextUrl));
+    return NextResponse.next();
   }
 
   if (!isLoggedIn) {
     return Response.redirect(new URL("/", nextUrl));
   }
+
+  return NextResponse.next();
 });
 
 export const config = {
   matcher: [
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
+    "/api/auth/:path*",
   ],
 };

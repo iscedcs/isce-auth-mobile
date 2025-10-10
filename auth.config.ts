@@ -1,9 +1,8 @@
-import { IAuthResponse } from "@/lib/types/auth";
+import axios from "axios";
 import { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { AUTH_API, URLS } from "./lib/const";
 import { signInFormSchema } from "./schemas/sign-in";
-import axios from "axios";
 
 export default {
   providers: [
@@ -14,20 +13,14 @@ export default {
     Credentials({
       async authorize(credentials) {
         const validatedFields = signInFormSchema.safeParse(credentials);
-        const url = `${AUTH_API}${URLS.auth.sign_in}`;
-
         if (!validatedFields.success) {
           console.error("Validation failed:", validatedFields.error);
           return null;
         }
-
         const { email, password } = validatedFields.data;
+        const url = `${AUTH_API}${URLS.auth.sign_in}`;
 
         try {
-          // const res = await axios.post<IAuthResponse>(url, {
-          //   email,
-          //   password,
-          // });
           const res = await axios.post(
             url,
             { email, password },
@@ -39,11 +32,11 @@ export default {
             }
           );
 
-          const data: IAuthResponse = await res.data();
+          const data = res.data;
           //console.log(data);
-          const userData = res.data.data || res.data.user || res.data;
+          const userData = data.data.data || data.data.user || data.data;
           const accessToken =
-            userData?.accessToken || res.data.accessToken || userData?.token;
+            userData?.accessToken || data.data.accessToken || userData?.token;
           if (userData && (userData.id || userData._id) && userData.email) {
             const user = {
               id: userData.id || userData._id,

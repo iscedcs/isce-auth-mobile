@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter_Tight } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
+import NextTopLoader from "nextjs-toploader";
+
 import { SessionProvider } from "next-auth/react";
 import DesktopView from "@/components/shared/desktop-view";
 
@@ -31,6 +33,7 @@ export default function RootLayout({
               <DesktopView />
             </div>
             <div className="md:hidden lg:hidden xl:hidden 2xl:hidden">
+              <NextTopLoader color="#ffffff" showSpinner={false} />
               {children}
             </div>
           </div>

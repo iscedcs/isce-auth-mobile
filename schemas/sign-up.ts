@@ -15,18 +15,13 @@ export const signUpForIndividualSchema = z.object({
     })
     .regex(/^0[789][01]\d{8}$/, "This is not a valid phone number"),
   email: z.email({ message: "Email address is not valid" }),
-  // otp: z.string().max(7, { message: "OTP Code should be 6 characters" }),
   address: z
     .string()
     .min(2, { message: "Address should be more than 2 characters" }),
   dob: z.date({
     error: "A date of birth is required.",
   }),
-  moi: z.enum(MOI, {
-    message: "Please select a valid means of identification",
-  }),
-  idNumber: z.string().max(12, { message: "IDs should have 12 characters" }),
-  profilePhoto: z.string().optional(),
+
   passwordObj: z
     .object({
       password: z

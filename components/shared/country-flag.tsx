@@ -26,7 +26,7 @@ export default function CountryFlag() {
       src={`https://flagcdn.com/w20/${countryCode}.png`}
       alt="Country Flag"
       width={20}
-      height={15}
+      height={20}
       className="rounded-full"
     />
   );

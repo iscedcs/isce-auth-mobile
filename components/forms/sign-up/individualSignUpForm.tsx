@@ -26,8 +26,9 @@ import {
 import { PASSWORDCHECK } from "@/lib/const";
 import { userType } from "@/lib/types/auth";
 import { cn, startFiveMinuteCountdown } from "@/lib/utils";
-import { MOI, otpSchema, signUpForIndividualSchema } from "@/schemas/sign-up";
+import { otpSchema, signUpForIndividualSchema } from "@/schemas/sign-up";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { endOfMonth, endOfToday } from "date-fns";
 import { format } from "date-fns/format";
 import { CalendarIcon } from "lucide-react";
 import Image from "next/image";
@@ -37,12 +38,9 @@ import { useForm } from "react-hook-form";
 import { BiRename } from "react-icons/bi";
 import { FaPhoneAlt, FaRegEye } from "react-icons/fa";
 import { GoArrowLeft } from "react-icons/go";
-import { HiMiniIdentification } from "react-icons/hi2";
 import { IoMdCheckmark, IoMdClose } from "react-icons/io";
 import { LuEyeClosed } from "react-icons/lu";
 import { MdEmail, MdLocationOn, MdOutlinePassword } from "react-icons/md";
-import { PiTrash } from "react-icons/pi";
-import { TbNumber123 } from "react-icons/tb";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -80,14 +78,11 @@ export default function IndividualSignUpForm({
       email: "",
       phoneNumber: "",
       firstName: "",
-      moi: "NIN",
-      address: "",
       lastName: "",
-      idNumber: "",
-      profilePhoto: "",
+      address: "",
       passwordObj: {
-        confirmPassword: "",
         password: "",
+        confirmPassword: "",
       },
     },
     mode: "all",
@@ -128,7 +123,7 @@ export default function IndividualSignUpForm({
       // const email = form.getValues("email");
       try {
         setIsLoading(true);
-        const res = await fetch("/api/auth/request-verfication", {
+        const res = await fetch("/api/request-verification-code", {
           body: JSON.stringify({ email }),
           method: "POST",
         });
@@ -201,7 +196,7 @@ export default function IndividualSignUpForm({
       () => {
         toast.error("The verifiction code has expired", {
           description:
-            "Enter your email address again for a new verfication code.",
+            "Enter your email address again for a new verification code.",
         });
         setIsOtpScreen(false);
         console.log("Countdown finished!");
@@ -254,7 +249,7 @@ export default function IndividualSignUpForm({
     try {
       setResendOTP(true);
       setIsLoading(true);
-      const res = await fetch("/api/auth/request-verfication", {
+      const res = await fetch("/api/request-verification-code", {
         body: JSON.stringify({ email }),
         method: "POST",
       });
@@ -289,7 +284,7 @@ export default function IndividualSignUpForm({
         if (!isValid) return;
         try {
           setIsLoading(true);
-          const res = await fetch("/api/auth/verify-code", {
+          const res = await fetch("/api/verify-code", {
             body: JSON.stringify({ email, code }),
             method: "POST",
           });
@@ -298,6 +293,7 @@ export default function IndividualSignUpForm({
           if (res.ok) {
             setIsLoading(false);
             setIsOtpScreen(false);
+
             toast.success("Email verified successfully", {
               description: "Your email has been verified successfully",
             });
@@ -332,36 +328,36 @@ export default function IndividualSignUpForm({
     setPassword(!password);
   };
 
-  const handleImageUpload = async (file: File) => {
-    setIsUploadingImage(true);
+  // const handleImageUpload = async (file: File) => {
+  //   setIsUploadingImage(true);
 
-    const formData = new FormData();
-    formData.append("file", file);
+  //   const formData = new FormData();
+  //   formData.append("file", file);
 
-    try {
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+  //   try {
+  //     const response = await fetch("/api/upload", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
 
-      const result = await response.json();
-      if (result.success) {
-        form.setValue("profilePhoto", result.url);
-        toast.success("Profile image uploaded successfully");
-      } else {
-        toast.error(result.error || "Failed to upload profile image");
-      }
-    } catch (error) {
-      toast.error("An error occurred while uploading the profile image");
-      console.error(error);
-    } finally {
-      setIsUploadingImage(false);
-    }
-  };
+  //     const result = await response.json();
+  //     if (result.success) {
+  //       form.setValue("profilePhoto", result.url);
+  //       toast.success("Profile image uploaded successfully");
+  //     } else {
+  //       toast.error(result.error || "Failed to upload profile image");
+  //     }
+  //   } catch (error) {
+  //     toast.error("An error occurred while uploading the profile image");
+  //     console.error(error);
+  //   } finally {
+  //     setIsUploadingImage(false);
+  //   }
+  // };
 
-  const handleDeleteImage = () => {
-    form.setValue("profilePhoto", "");
-  };
+  // const handleDeleteImage = () => {
+  //   form.setValue("profilePhoto", "");
+  // };
 
   const handleSubmit = async (data: signUpValues) => {
     setIsBuidlingProfile(true);
@@ -372,9 +368,6 @@ export default function IndividualSignUpForm({
       lastName: data.lastName,
       phone: data.phoneNumber,
       email: data.email,
-      displayPicture: data.profilePhoto,
-      idNumber: data.idNumber,
-      identificationType: data.moi,
       dob: data.dob,
       address: data.address,
       password: data.passwordObj.password,
@@ -397,7 +390,7 @@ export default function IndividualSignUpForm({
     };
     try {
       const res = await fetch(
-        `/api/auth/sign-up?userType=${encodeURIComponent(userType)}`,
+        `/api/sign-up?userType=${encodeURIComponent(userType)}`,
         {
           body: JSON.stringify(payload),
           method: "POST",
@@ -689,7 +682,7 @@ export default function IndividualSignUpForm({
           } hidden transition-all w-full mt-[20px]`}>
           <div className="">
             <p className=" text-[24px] font-extrabold">
-              Customize your Events Account
+              Personalize your profile with your address
             </p>
             <ScrollArea className=" h-[400px]">
               <div className=" mt-[10px]">
@@ -712,124 +705,6 @@ export default function IndividualSignUpForm({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="moi"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <div className="relative mt-[10px]">
-                          <HiMiniIdentification className="w-[24px] h-[24px] top-1/2 -translate-y-1/2 absolute left-0" />
-                          <Select
-                            onValueChange={field.onChange}
-                            // value={field.value}
-                            // defaultValue={field.value}
-                          >
-                            <SelectTrigger className="text-[18px] py-[25px] pl-[40px] rounded-none border-t-0 border-l-0 border-r-0 w-full">
-                              <SelectValue placeholder="Select a means of identification" />
-                            </SelectTrigger>
-                            <SelectContent className="border-[0.5px] p-[10px] mt-[10px] bg-black text-white rounded-[8px]">
-                              {MOI.map((moi, k) => (
-                                <SelectItem
-                                  className="rounded-none text-[18px]"
-                                  key={k}
-                                  value={moi}>
-                                  {moi}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </FormControl>
-                      <FormMessage className="text-accent" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  name="idNumber"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <div className=" mt-[10px] relative">
-                          <TbNumber123 className=" absolute top-1/2 -translate-y-1/2 w-[24px] h-[24px]" />
-                          <Input
-                            {...field}
-                            className="border-r-0 border-t-0 border-l-0 pl-[40px] py-[25px] rounded-none placeholder:text-[18px]"
-                            placeholder="Provide your identification number"
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage className="text-accent" />
-                    </FormItem>
-                  )}
-                />
-                <div className=" mt-[20px]">
-                  <p className=" text-[18px]">Add a profile photo</p>
-                  <FormField
-                    name="profilePhoto"
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <div className=" mt-[10px]">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleImageUpload(file);
-                              }}
-                              className="hidden"
-                              id="event-image-upload"
-                              disabled={isUploadingImage}
-                            />
-                            <div className=" h-[150px] border-[2px] border-dashed rounded-[8px] bg-secondary w-[30%]">
-                              <div
-                                onClick={() =>
-                                  document
-                                    .getElementById("event-image-upload")
-                                    ?.click()
-                                }
-                                className=" flex items-center h-full justify-center ">
-                                {field.value ? (
-                                  <div className=" w-full relative h-full">
-                                    <div className=" w-full absolute h-full flex justify-center items-center bg-black/60 ">
-                                      <PiTrash
-                                        onClick={() => {
-                                          handleDeleteImage();
-                                        }}
-                                        className=" w-[24px] h-[24px]"
-                                      />
-                                    </div>
-                                    <Image
-                                      src={field.value || ""}
-                                      alt="profile image"
-                                      width={"1000"}
-                                      height={"1000"}
-                                      className=" object-cover h-full w-full rounded-[8px]"
-                                    />
-                                  </div>
-                                ) : (
-                                  <p className=" text-[20px]">+</p>
-                                )}
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  form.setValue("profilePhoto", "")
-                                }
-                                className="bg-white absolute top-1 right-1 rounded-full shadow-lg p-1">
-                                {/* <IoCloseOutline className="text-black w-4 h-4" /> */}
-                              </button>
-                            </div>
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
               </div>
               <ScrollBar orientation="vertical" />
             </ScrollArea>
@@ -895,6 +770,7 @@ export default function IndividualSignUpForm({
             </div>
             <Button
               type="submit"
+              disabled={!form.formState.isValid || loading}
               className=" w-full rounded-[12px] font-semibold py-[24px]">
               Finish setup
             </Button>
@@ -904,7 +780,7 @@ export default function IndividualSignUpForm({
           <div className="fixed left-0 top-0 z-30 h-screen">
             <div className=" relative">
               <Image
-                src={"/loading-screen.gif"}
+                src={"/assets/loading-screen.gif"}
                 alt="building"
                 width={"1000"}
                 height={"1000"}
