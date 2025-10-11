@@ -8,6 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 import { userType } from "@/lib/types/auth";
+import { getSession, signOut } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export default function SignUpMobile({
@@ -20,6 +22,7 @@ export default function SignUpMobile({
   const [individual, setIndividual] = useState(true);
   const [userType, setUserType] = useState<userType>("USER");
   const [stepNumber, setStepNumber] = useState(1);
+  const singleProduct = useSearchParams();
 
   const safe = useMemo(() => {
     // NOTE: this component is client, so we can't await props directly.
@@ -42,6 +45,18 @@ export default function SignUpMobile({
     const fromStorage = sessionStorage.getItem("redirect_hint");
     return getSafeRedirect(fromStorage) || "/";
   };
+
+  useEffect(() => {
+    async function maybeForceReauth() {
+      if (singleProduct.get("prompt") === "login") {
+        const session = await getSession();
+        if (session) {
+          await signOut({ redirect: false });
+        }
+      }
+    }
+    maybeForceReauth();
+  }, [singleProduct]);
 
   const handleBusiness = () => {
     setBusiness(true);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AuthService } from "@/lib/auth-service";
@@ -11,7 +11,7 @@ import {
   UserDetailsFormData,
   UserTypeFormData,
 } from "@/schemas/desktop";
-import { getSession, signIn } from "next-auth/react";
+import { getSession, signIn, signOut } from "next-auth/react";
 import { toast } from "sonner";
 import { AuthLayout } from "./forms/auth/auth-layout";
 import { AccountTypeForm } from "./forms/auth/desktop/account-type-form";
@@ -36,7 +36,7 @@ export default function SignUpClient({ callbackUrl }: Props) {
   const [isPasswordResetModalOpen, setIsPasswordResetModalOpen] =
     useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+  const singleProduct = useSearchParams();
   const safe = getSafeRedirect(callbackUrl);
 
   useEffect(() => {
@@ -47,6 +47,18 @@ export default function SignUpClient({ callbackUrl }: Props) {
     const fromStorage = sessionStorage.getItem("redirect_hint");
     return getSafeRedirect(fromStorage) || "/";
   }
+
+  useEffect(() => {
+    async function maybeForceReauth() {
+      if (singleProduct.get("prompt") === "login") {
+        const session = await getSession();
+        if (session) {
+          await signOut({ redirect: false });
+        }
+      }
+    }
+    maybeForceReauth();
+  }, [singleProduct]);
 
   const cardImages = [
     "/images/BROWN.png",

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
-import { getSession, signIn } from "next-auth/react";
+import { getSession, signIn, signOut } from "next-auth/react";
 import { DesktopSignInForm } from "./forms/auth/desktop/signInDesktopform";
 import CountryFlag from "./shared/country-flag";
 import { SignInFormData } from "@/schemas/desktop";
@@ -20,6 +20,7 @@ export default function SignInClient({ callbackUrl }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordResetModalOpen, setIsPasswordResetModalOpen] =
     useState(false);
+  const singleProduct = useSearchParams();
 
   // Carousel State
   const cardImages = [
@@ -37,9 +38,22 @@ export default function SignInClient({ callbackUrl }: Props) {
     return () => clearInterval(t);
   }, []);
 
+  const prompt = singleProduct.get("prompt") === "login" ? "&prompt=login" : "";
   const signUpHref = callbackUrl
-    ? `/sign-up?redirect=${encodeURIComponent(callbackUrl)}`
-    : "/sign-up";
+    ? `/sign-up?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
+    : `/sign-up${prompt}`;
+
+  useEffect(() => {
+    async function maybeForceReauth() {
+      if (singleProduct.get("prompt") === "login") {
+        const session = await getSession();
+        if (session) {
+          await signOut({ redirect: false });
+        }
+      }
+    }
+    maybeForceReauth();
+  }, [singleProduct]);
 
   const handleSignIn = async (data: SignInFormData) => {
     setIsLoading(true);

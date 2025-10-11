@@ -13,8 +13,8 @@ import { Label } from "@/components/ui/label";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 import { signInFormSchema } from "@/schemas/mobile/sign-in";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { getSession, signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { getSession, signIn, signOut } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { FaRegEye } from "react-icons/fa";
@@ -74,6 +74,20 @@ export default function MobileSignInForm({
   // const handleRedirectCreateAccount = () => {
   //   router.push("/sign-up");
   // };
+
+  const sp = useSearchParams();
+
+  useEffect(() => {
+    async function maybeForceReauth() {
+      if (sp.get("prompt") === "login") {
+        const session = await getSession();
+        if (session) {
+          await signOut({ redirect: false });
+        }
+      }
+    }
+    maybeForceReauth();
+  }, [sp]);
 
   const handleDisplayPassword = () => {
     setPassword((password) => !password);

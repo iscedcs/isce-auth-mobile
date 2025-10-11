@@ -12,24 +12,34 @@ export default auth(async (req) => {
 
   const isLoggedIn = !!req.auth;
 
-  const isApiRoute = pathname.startsWith(apiAuthPrefix);
+  const isApiAuth = pathname.startsWith(apiAuthPrefix); // /api/auth
+  const isApiRoute = pathname.startsWith("/api");
   const isPublicRoute = publicRoutes.includes(pathname);
   const isAuthRoute = authRoutes.includes(pathname);
-  if (pathname.startsWith("/api")) return NextResponse.next();
 
-  if (isApiRoute) return NextResponse.next();
+  const prompt = nextUrl.searchParams.get("prompt");
+  const hasReturnParam =
+    nextUrl.searchParams.has("redirect") ||
+    nextUrl.searchParams.has("redirect_uri") ||
+    nextUrl.searchParams.has("callbackUrl");
+
+  const forceLogin = prompt === "login";
+
+  if (isApiRoute || isApiAuth) return NextResponse.next();
 
   if (isPublicRoute) return NextResponse.next();
 
   if (isAuthRoute) {
-    if (isLoggedIn) {
+    if (isLoggedIn && !forceLogin && !hasReturnParam) {
       return NextResponse.redirect(new URL("/dashboard", nextUrl));
     }
     return NextResponse.next();
   }
 
   if (!isLoggedIn) {
-    return Response.redirect(new URL("/", nextUrl));
+    const signIn = new URL("/sign-in", nextUrl);
+    signIn.searchParams.set("redirect", nextUrl.pathname + nextUrl.search);
+    return NextResponse.redirect(signIn);
   }
 
   return NextResponse.next();

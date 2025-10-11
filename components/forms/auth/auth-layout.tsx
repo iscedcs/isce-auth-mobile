@@ -28,9 +28,9 @@ export function AuthLayout({
     searchParams.get("redirect") ||
     searchParams.get("returnTo") ||
     searchParams.get("redirect_uri");
-
+  const prompt = searchParams.get("prompt") === "login" ? "&prompt=login" : "";
   const signUpHref = redirectParam
-    ? `/sign-in?redirect=${encodeURIComponent(redirectParam)}`
+    ? `/sign-in?redirect=${encodeURIComponent(redirectParam)}${prompt}`
     : "/";
   return (
     <div className="h-screen border-6 border-white bg-black flex  overflow-hidden">

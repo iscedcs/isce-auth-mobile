@@ -49,6 +49,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       try {
         console.log("Redirect Callback - URL:", url, "BaseURL:", baseUrl);
         const u = new URL(url, baseUrl);
+        if (u.pathname === "/sign-in") return u.toString();
         const q =
           u.searchParams.get("callbackUrl") ||
           u.searchParams.get("redirect") ||
