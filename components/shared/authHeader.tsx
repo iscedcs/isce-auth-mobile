@@ -9,7 +9,7 @@ export default function AuthHeader({
   onClick,
 }: AuthHeaderType) {
   return (
-    <div className=" bg-secondary w-full fixed z-20  p-2.5 flex items-center justify-between ">
+    <div className=" md:hidden  bg-secondary w-full fixed z-20  p-2.5 flex items-center justify-between ">
       <div className=" flex gap-2.5 items-center ">
         <div className="">
           <IoIosInformationCircle className=" w-[16px] h-[16px]" />

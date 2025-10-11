@@ -3,7 +3,7 @@ import authConfig from "./auth.config";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: {
-    signIn: "/login",
+    signIn: "/sign-in",
     error: "/auth/error",
   },
   callbacks: {
@@ -72,7 +72,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       } catch (error) {
         console.log(error);
       }
-      return `${baseUrl}/login`;
+      return `${baseUrl}/sign-in`;
     },
 
     async signIn({ user, account, profile, email, credentials }) {

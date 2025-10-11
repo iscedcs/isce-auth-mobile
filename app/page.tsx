@@ -1,10 +1,12 @@
+import DesktopHomeBridge from "@/components/shared/desktopHomeBridge";
+import Responsive from "@/components/shared/responsive";
 import SplashScreenClient from "@/components/shared/splashScreenClient";
-import { Suspense } from "react";
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
-      <SplashScreenClient />
-    </Suspense>
+    <Responsive
+      desktop={<DesktopHomeBridge />}
+      mobile={<SplashScreenClient />}
+    />
   );
 }

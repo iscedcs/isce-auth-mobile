@@ -6,7 +6,7 @@ import { userType } from "@/lib/types/auth";
 import {
   extendedSignUpSchema,
   signUpForIndividualSchema,
-} from "@/schemas/sign-up";
+} from "@/schemas/mobile/sign-up";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
