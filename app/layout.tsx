@@ -28,15 +28,9 @@ export default function RootLayout({
       <body className={`${interTight.className} antialiased`}>
         <Toaster richColors />
         <SessionProvider>
-          <div className="">
-            <div className="hidden lg:inline xl:inline 2xl:inline">
-              <DesktopView />
-            </div>
-            <div className="md:hidden lg:hidden xl:hidden 2xl:hidden">
-              <NextTopLoader color="#ffffff" showSpinner={false} />
-              {children}
-            </div>
-          </div>
+          <NextTopLoader color="#ffffff" showSpinner={false} />
+          {children}
+          <Toaster richColors position="bottom-right" />
         </SessionProvider>
       </body>
     </html>

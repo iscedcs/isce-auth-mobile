@@ -12,7 +12,9 @@ export default function AuthLayout({
 }>) {
   return (
     <div className=" w-full">
-      <div className=" p-[20px] relative w-full h-screen ">{children}</div>
+      <div className="md:p-0 p-[20px] relative w-full h-screen ">
+        {children}
+      </div>
     </div>
   );
 }

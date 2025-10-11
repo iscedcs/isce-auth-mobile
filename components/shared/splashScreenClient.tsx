@@ -128,7 +128,7 @@ export default function SplashScreenClient() {
         {/* Actions */}
         <div className="mt-6 w-full space-y-3">
           <Link
-            href="/login"
+            href="/sign-in"
             className="block h-12 w-full rounded-full bg-white text-center font-semibold text-black leading-[48px]">
             Log in
           </Link>

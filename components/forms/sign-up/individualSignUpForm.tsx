@@ -24,13 +24,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PASSWORDCHECK } from "@/lib/const";
+import { getSafeRedirect } from "@/lib/safe-redirect";
 import { userType } from "@/lib/types/auth";
 import { cn, startFiveMinuteCountdown } from "@/lib/utils";
-import { otpSchema, signUpForIndividualSchema } from "@/schemas/sign-up";
+import { otpSchema, signUpForIndividualSchema } from "@/schemas/mobile/sign-up";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { endOfMonth, endOfToday } from "date-fns";
 import { format } from "date-fns/format";
 import { CalendarIcon } from "lucide-react";
+import { getSession, signIn } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -52,11 +53,13 @@ export default function IndividualSignUpForm({
   stepNumber,
   setStep,
   setStepNumber,
+  getRedirect,
 }: {
   stepNumber: number;
   setStepNumber: React.Dispatch<React.SetStateAction<number>>;
   step: number;
   setStep: React.Dispatch<React.SetStateAction<number>>;
+  getRedirect: () => string;
 }) {
   const userType: userType = "USER";
   const [isOtpScreen, setIsOtpScreen] = useState(false);
@@ -402,8 +405,38 @@ export default function IndividualSignUpForm({
       const data = await res.json();
       if (res.ok) {
         setIsLoading(false);
-        // router.push("/user/events");
-        console.log("ACCOUNT INFORMATION", data);
+        const signInResult = await signIn("credentials", {
+          email: data.email,
+          password: data.passwordObj.password,
+          redirect: false,
+        });
+
+        if (signInResult?.ok) {
+          const session = await getSession();
+          const token = (session as any)?.user?.accessToken;
+
+          // pull safe redirect (from sessionStorage)
+          const safe = getSafeRedirect(getRedirect());
+          if (safe && token) {
+            const target = new URL(safe);
+            const callback = new URL("/auth/callback", target.origin);
+            callback.searchParams.set("token", token);
+
+            const finalPath = target.pathname + target.search + target.hash;
+            callback.searchParams.set("redirect", finalPath);
+
+            window.location.href = callback.toString();
+            return;
+          }
+
+          // no redirect requested -> go home (or dashboard)
+          window.location.href = "/";
+          return;
+        }
+
+        const r = getRedirect();
+        toast.success("Account created! Please sign in.");
+        window.location.href = `/sign-in?redirect=${encodeURIComponent(r)}`;
         return data;
       }
       setIsBuidlingProfile(false);

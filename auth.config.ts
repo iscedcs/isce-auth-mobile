@@ -2,7 +2,7 @@ import axios from "axios";
 import { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { AUTH_API, URLS } from "./lib/const";
-import { signInFormSchema } from "./schemas/sign-in";
+import { signInFormSchema } from "./schemas/mobile/sign-in";
 
 export default {
   providers: [

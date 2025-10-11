@@ -1,4 +1,4 @@
-import { extendedSignUpSchema } from "@/schemas/sign-up";
+import { extendedSignUpSchema } from "@/schemas/mobile/sign-up";
 import z from "zod";
 
 export type businessSignUpValues = z.infer<typeof extendedSignUpSchema>;

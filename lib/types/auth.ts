@@ -15,7 +15,7 @@ export type userType = "USER" | "BUSINESS_USER";
 
 export type AuthHeaderType = {
   loading: boolean;
-  message: string;
+  message?: string;
   linkText?: string;
   onClick?: () => void;
 };
