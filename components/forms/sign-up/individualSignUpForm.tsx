@@ -473,7 +473,7 @@ export default function IndividualSignUpForm({
                   <Input
                     {...field}
                     // placeholder=" Enter your first name"
-                    className=" mt-[15px] py-[20px] text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
+                    className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                   />
                 </FormControl>
                 <FormMessage className=" text-accent" />
@@ -492,7 +492,7 @@ export default function IndividualSignUpForm({
                   <Input
                     {...field}
                     // placeholder=" Enter your last name"
-                    className=" mt-[15px] py-[20px] text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
+                    className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                   />
                 </FormControl>
                 <FormMessage className=" text-accent" />
@@ -519,7 +519,7 @@ export default function IndividualSignUpForm({
                   <Input
                     {...field}
                     // placeholder="What’s your email?"
-                    className=" mt-[15px] py-[20px] text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
+                    className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                   />
                 </FormControl>
                 <FormMessage className=" text-accent" />
@@ -554,7 +554,7 @@ export default function IndividualSignUpForm({
                         maxLength={6}
                         // onChange={handleVerifyOTP}
                         // placeholder="Enter OTP code"
-                        className=" mt-[15px] py-[20px] text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
+                        className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                       />
                       <p className=" right-0 top-1/2 text-[12px] -translate-y-1/2 absolute">
                         {time}
@@ -749,7 +749,7 @@ export default function IndividualSignUpForm({
               ? " inline translate-x-0 "
               : " hidden -translate-x-full "
           } hidden transition-all w-full mt-[20px]`}>
-          <div className=" px-[20px] py-[100px]  bg-black w-screen  flex flex-col gap-[19px] fixed left-0 top-0 z-30 h-screen">
+          <div className=" px-[20px] py-[100px]  bg-black w-screen  flex flex-col gap-[19px] fixed left-0 top-0 z-30 h-[100svh]">
             <div className="">
               <p className=" text-[32px] font-bold">When’s your birthday?</p>
               <p className=" w-[70%] text-[18px]">
@@ -810,16 +810,16 @@ export default function IndividualSignUpForm({
           </div>
         </div>
         {isBuildingProfile ? (
-          <div className="fixed left-0 top-0 z-30 h-screen">
+          <div className="fixed left-0 top-0 z-30 h-[100svh]">
             <div className=" relative">
               <Image
                 src={"/assets/loading-screen.gif"}
                 alt="building"
                 width={"1000"}
                 height={"1000"}
-                className=" h-screen"
+                className=" h-[100svh]"
               />
-              <div className=" bg-black/60 flex flex-col items-center justify-center top-0 absolute z-40 w-full h-screen ">
+              <div className=" bg-black/60 flex flex-col items-center justify-center top-0 absolute z-40 w-full h-[100svh] ">
                 <p className=" text-[32px] w-[60%] text-center font-bold">
                   BUILDING YOUR PROFILE
                 </p>

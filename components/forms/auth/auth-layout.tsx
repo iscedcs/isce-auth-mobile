@@ -33,7 +33,7 @@ export function AuthLayout({
     ? `/sign-in?redirect=${encodeURIComponent(redirectParam)}${prompt}`
     : "/";
   return (
-    <div className="h-screen border-6 border-white bg-black flex  overflow-hidden">
+    <div className="h-[100svh] border-6 border-white bg-black flex  overflow-hidden">
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-[40%] flex-col justify-center items-center p-8 relative bg-gradient-to-b from-[#0a0a0a] to-[#1a1a1a] rounded-l-[12px] border-r-8 border-white">
         <div className="absolute top-6 right-6">
