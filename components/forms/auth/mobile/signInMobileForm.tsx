@@ -168,8 +168,8 @@ export default function MobileSignInForm({
             />
           ) : null}
         </div> */}
-        <div className=" h-screen relative pt-[30px] ">
-          <div className=" mt-[10px] flex gap-3 items-center">
+        <div className=" h-[100svh] relative ">
+          <div className="  flex gap-3 items-center">
             <GoArrowLeft className=" w-[32px] h-[32px]" />
             {/* <p className=" text-[24px]  font-bold">Sign in to your account</p> */}
           </div>

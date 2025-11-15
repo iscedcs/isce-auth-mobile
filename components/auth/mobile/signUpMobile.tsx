@@ -76,7 +76,7 @@ export default function SignUpMobile({
   };
 
   return (
-    <div className=" relative min-h-screen ">
+    <div className=" relative h-[100svh]">
       <p className=" pt-[50px] text-[14px]">
         Step {stepNumber.toString()} of 7
       </p>
@@ -91,7 +91,7 @@ export default function SignUpMobile({
           <Button
             onClick={handleNextStep}
             type="button"
-            className="  w-full rounded-[12px] font-semibold py-[24px] ">
+            className="w-full rounded-[12px] font-semibold py-[24px] ">
             Continue
           </Button>
         </div>
