@@ -170,7 +170,7 @@ export default function MobileSignInForm({
         </div> */}
         <div className=" h-[100svh] relative ">
           <div className="  flex gap-3 items-center">
-            <GoArrowLeft className=" w-[32px] h-[32px]" />
+            <GoArrowLeft className=" w-[32px] h-[32px]" onClick={router.back} />
             {/* <p className=" text-[24px]  font-bold">Sign in to your account</p> */}
           </div>
 
