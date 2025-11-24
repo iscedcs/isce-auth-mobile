@@ -1,11 +1,10 @@
+import { Toaster } from "@/components/ui/sonner";
 import type { Metadata } from "next";
 import { Inter_Tight } from "next/font/google";
-import { Toaster } from "@/components/ui/sonner";
-import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
+import "./globals.css";
 
 import { SessionProvider } from "next-auth/react";
-import DesktopView from "@/components/shared/desktop-view";
 
 const interTight = Inter_Tight({
   variable: "--inter-tight",

@@ -123,6 +123,21 @@ export default function SignUpMobile({
                 </div>
               </Card>
               <Card
+                className="py-[10px] px-[15px] flex flex-row rounded-[12px] 
+  opacity-40 cursor-not-allowed pointer-events-none border-0">
+                <CardContent className="">
+                  <p className="font-bold text-white text-[20px]">Business</p>
+                  <p className="text-[14px] text-white">
+                    {`Currently unavailable — coming soon.`}
+                  </p>
+                </CardContent>
+
+                <div className="">
+                  <Checkbox checked={false} disabled />
+                </div>
+              </Card>
+
+              {/* <Card
                 className={` ${
                   business ? " border-[0.5]" : " border-0"
                 } py-[10px] px-[15px] flex flex-row rounded-[12px]`}>
@@ -140,7 +155,7 @@ export default function SignUpMobile({
                     onClick={() => handleBusiness()}
                   />
                 </div>
-              </Card>
+              </Card> */}
             </div>
           </div>
         </div>
