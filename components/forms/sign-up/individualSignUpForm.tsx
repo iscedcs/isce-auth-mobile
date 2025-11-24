@@ -1,3 +1,4 @@
+import GoogleAddressField from "@/components/shared/location-auto-complete";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -33,7 +34,7 @@ import { format } from "date-fns/format";
 import { CalendarIcon } from "lucide-react";
 import { getSession, signIn } from "next-auth/react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { BiRename } from "react-icons/bi";
@@ -61,6 +62,20 @@ export default function IndividualSignUpForm({
   setStep: React.Dispatch<React.SetStateAction<number>>;
   getRedirect: () => string;
 }) {
+  const sp = useSearchParams();
+  // const prompt = sp.get("prompt") === "login" ? "&prompt=login" : "";
+
+  // Save redirect during onboarding
+  useEffect(() => {
+    const safe = getSafeRedirect(sp.get("redirect"));
+    if (safe) sessionStorage.setItem("redirect_hint", safe);
+  }, [sp]);
+
+  // function getSavedRedirect() {
+  //   const fromStorage = sessionStorage.getItem("redirect_hint");
+  //   return getSafeRedirect(fromStorage) || "/";
+  // }
+
   const userType: userType = "USER";
   const [isOtpScreen, setIsOtpScreen] = useState(false);
   const [isConfirmPasswordScreen, setIsConfirmPasswordScreen] = useState(false);
@@ -77,7 +92,7 @@ export default function IndividualSignUpForm({
   const form = useForm<signUpValues>({
     resolver: zodResolver(signUpForIndividualSchema),
     defaultValues: {
-      dob: new Date(),
+      dob: null as unknown as Date,
       email: "",
       phoneNumber: "",
       firstName: "",
@@ -384,11 +399,11 @@ export default function IndividualSignUpForm({
         access: true,
       },
       business_permissions: {
-        invoicing: true,
-        appointment: true,
-        chat: true,
-        analytics: true,
-        services: true,
+        invoicing: false,
+        appointment: false,
+        chat: false,
+        analytics: false,
+        services: false,
       },
     };
     try {
@@ -407,7 +422,7 @@ export default function IndividualSignUpForm({
         setIsLoading(false);
         const signInResult = await signIn("credentials", {
           email: data.email,
-          password: data.passwordObj.password,
+          password: data.password,
           redirect: false,
         });
 
@@ -417,21 +432,23 @@ export default function IndividualSignUpForm({
 
           // pull safe redirect (from sessionStorage)
           const safe = getSafeRedirect(getRedirect());
-          if (safe && token) {
-            const target = new URL(safe);
-            const callback = new URL("/auth/callback", target.origin);
-            callback.searchParams.set("token", token);
+          setIsBuidlingProfile(true);
 
-            const finalPath = target.pathname + target.search + target.hash;
-            callback.searchParams.set("redirect", finalPath);
+          setTimeout(() => {
+            if (safe && token) {
+              const target = new URL(safe);
+              const callback = new URL("/auth/callback", target.origin);
+              callback.searchParams.set("token", token);
 
-            window.location.href = callback.toString();
-            return;
-          }
+              const finalPath = target.pathname + target.search + target.hash;
+              callback.searchParams.set("redirect", finalPath);
 
-          // no redirect requested -> go home (or dashboard)
-          window.location.href = "/";
-          return;
+              window.location.href = callback.toString();
+              return;
+            }
+
+            window.location.href = "/";
+          }, 1500);
         }
 
         const r = getRedirect();
@@ -450,6 +467,7 @@ export default function IndividualSignUpForm({
       console.log("Problem creating account", e);
     }
   };
+  console.log(form.formState.errors);
 
   return (
     <Form {...form}>
@@ -588,7 +606,7 @@ export default function IndividualSignUpForm({
                 </Label>
                 <FormControl>
                   <div className=" mt-[15px] items-center flex gap-5">
-                    <Select>
+                    {/* <Select>
                       <SelectTrigger className=" text-[24px] font-extrabold text-white border-t-0 border-l-0 rounded-none border-r-0">
                         <SelectValue placeholder="+234" />
                       </SelectTrigger>
@@ -596,7 +614,7 @@ export default function IndividualSignUpForm({
                         <SelectItem value="+234">+234</SelectItem>
                         <SelectItem value="+224">+224</SelectItem>
                       </SelectContent>
-                    </Select>
+                    </Select> */}
                     <Input
                       {...field}
                       // placeholder=" Enter ssyour first name"
@@ -725,16 +743,20 @@ export default function IndividualSignUpForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <div className=" relative">
-                          <MdLocationOn className=" absolute top-1/2 -translate-y-1/2 w-[24px] h-[24px]" />
-                          <Input
-                            {...field}
-                            className="border-r-0 border-t-0 border-l-0 pl-[40px] py-[25px] rounded-none placeholder:text-[18px]"
-                            placeholder="Input your address"
+                        <div className="relative">
+                          <MdLocationOn className="absolute top-1/2 -translate-y-1/2 w-[24px] h-[24px]" />
+
+                          <GoogleAddressField
+                            value={field.value ?? ""}
+                            onChange={(val) => field.onChange(val)}
+                            onSelectAddress={(structured) => {
+                              console.log("Structured address:", structured);
+                              form.setValue("structuredAddress", structured);
+                            }}
                           />
                         </div>
                       </FormControl>
-                      <FormMessage className=" text-accent" />
+                      <FormMessage className="text-accent" />
                     </FormItem>
                   )}
                 />

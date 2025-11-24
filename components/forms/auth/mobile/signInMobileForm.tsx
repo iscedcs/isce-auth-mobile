@@ -1,5 +1,6 @@
 "use client";
 
+import AuthHeader from "@/components/shared/authHeader";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -71,11 +72,16 @@ export default function MobileSignInForm({
   //   router.push("/forgot-password");
   // };
 
-  // const handleRedirectCreateAccount = () => {
-  //   router.push("/sign-up");
-  // };
-
   const sp = useSearchParams();
+  const prompt = sp.get("prompt") === "login" ? "&prompt=login" : "";
+
+  const signUpHref = callbackUrl
+    ? `/sign-up?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
+    : `/sign-up${prompt}`;
+
+  const handleRedirectCreateAccount = () => {
+    router.push(signUpHref);
+  };
 
   useEffect(() => {
     async function maybeForceReauth() {
@@ -150,14 +156,14 @@ export default function MobileSignInForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)}>
-        {/* <div className=" left-0 absolute top-0 w-screen">
+        <div className=" left-0 absolute top-0 w-screen">
           <AuthHeader
             message="Don't have an account?"
             loading={false}
             onClick={handleRedirectCreateAccount}
             linkText="Create account"
           />
-        </div> */}
+        </div>
         {/* <div className=" left-0 absolute top-0 w-screen ">
           {step === 2 ? (
             <AuthHeader
@@ -169,7 +175,7 @@ export default function MobileSignInForm({
           ) : null}
         </div> */}
         <div className=" h-[100svh] relative ">
-          <div className="  flex gap-3 items-center">
+          <div className=" pt-6  flex gap-3 items-center">
             <GoArrowLeft className=" w-[32px] h-[32px]" onClick={router.back} />
             {/* <p className=" text-[24px]  font-bold">Sign in to your account</p> */}
           </div>

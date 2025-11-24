@@ -13,15 +13,28 @@ export const signUpForIndividualSchema = z.object({
     .string({
       message: "Please enter phone number.",
     })
-    .regex(/^0[789][01]\d{8}$/, "This is not a valid phone number"),
+    .regex(/^(070|080|081|090|091|071)\d{8}$/, "Invalid Nigerian phone number"),
   email: z.email({ message: "Email address is not valid" }),
   address: z
     .string()
     .min(2, { message: "Address should be more than 2 characters" }),
-  dob: z.date({
-    error: "A date of birth is required.",
-  }),
-
+  structuredAddress: z
+    .object({
+      street: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      zipCode: z.string().optional(),
+      country: z.string().optional(),
+    })
+    .optional(),
+  dob: z
+    .date()
+    .refine((v) => v instanceof Date && !isNaN(v.getTime()), {
+      message: "A date of birth is required.",
+    })
+    .refine((v) => v <= new Date(), {
+      message: "Date must be in the past",
+    }),
   passwordObj: z
     .object({
       password: z

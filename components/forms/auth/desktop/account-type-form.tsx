@@ -75,8 +75,9 @@ export function AccountTypeForm({
                       </div>
                     </div>
 
-                    <div className="relative items-start space-x-4 p-4 border border-gray-700 rounded-lg cursor-pointer peer-checked:border-white peer-checked:bg-gray-900/50 hover:border-gray-600 transition-colors">
+                    {/* <div className="relative items-start space-x-4 p-4 border border-gray-700 rounded-lg cursor-pointer peer-checked:border-white peer-checked:bg-gray-900/50 hover:border-gray-600 transition-colors">
                       <RadioGroupItem
+                        disabled
                         value="BUSINESS_USER"
                         id="BUSINESS_USER"
                         className="peer hidden"
@@ -103,6 +104,26 @@ export function AccountTypeForm({
                               clipRule="evenodd"
                             />
                           </svg>
+                        </div>
+                      </Label>
+                    </div> */}
+                    <div
+                      className="relative items-start space-x-4 p-4 border border-gray-700 rounded-lg 
+    opacity-40 cursor-not-allowed pointer-events-none">
+                      <RadioGroupItem
+                        value="BUSINESS_USER"
+                        id="BUSINESS_USER"
+                        className="peer hidden"
+                        disabled
+                      />
+                      <Label htmlFor="BUSINESS_USER" className="flex">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-white mb-1">
+                            Business
+                          </h3>
+                          <p className="text-sm text-gray-400">
+                            Currently unavailable — coming soon.
+                          </p>
                         </div>
                       </Label>
                     </div>
