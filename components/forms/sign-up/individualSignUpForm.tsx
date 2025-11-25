@@ -34,7 +34,7 @@ import { format } from "date-fns/format";
 import { CalendarIcon } from "lucide-react";
 import { getSession, signIn } from "next-auth/react";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { BiRename } from "react-icons/bi";
@@ -63,18 +63,12 @@ export default function IndividualSignUpForm({
   getRedirect: () => string;
 }) {
   const sp = useSearchParams();
-  // const prompt = sp.get("prompt") === "login" ? "&prompt=login" : "";
 
   // Save redirect during onboarding
   useEffect(() => {
     const safe = getSafeRedirect(sp.get("redirect"));
     if (safe) sessionStorage.setItem("redirect_hint", safe);
   }, [sp]);
-
-  // function getSavedRedirect() {
-  //   const fromStorage = sessionStorage.getItem("redirect_hint");
-  //   return getSafeRedirect(fromStorage) || "/";
-  // }
 
   const userType: userType = "USER";
   const [isOtpScreen, setIsOtpScreen] = useState(false);
@@ -85,9 +79,11 @@ export default function IndividualSignUpForm({
   const [password, setPassword] = useState(true);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isBuildingProfile, setIsBuidlingProfile] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
-  //   const [errorCheck, setErrorCheck] = useState(false);
-  // console.log({ step });
+  const STEP_SIZE = 15;
+  const FIRST_STEP = 2 * STEP_SIZE; // 30
+  const [maxAllowedStep, setMaxAllowedStep] = useState(FIRST_STEP);
 
   const form = useForm<signUpValues>({
     resolver: zodResolver(signUpForIndividualSchema),
@@ -125,83 +121,81 @@ export default function IndividualSignUpForm({
   const hasLowercase = /[a-z]/.test(passwordValues);
   const hasNumber = /[0-9]/.test(passwordValues);
 
-  const router = useRouter();
-
-  //   console.log({ hasEightCharacters });
-  // console.log({ loading });
-
-  const handleNextStep = async () => {
-    if (step < 45 || step > 45) {
-      // setIsLoading(false);
-      setStep(step + 15);
-      setStepNumber(stepNumber + 1);
+  // Helper: move to a given step and track the highest step the user has legitimately reached
+  const goToStep = (newStep: number, newStepNumber?: number) => {
+    setStep(newStep);
+    if (typeof newStepNumber === "number") {
+      setStepNumber(newStepNumber);
+    } else {
+      setStepNumber(newStep / STEP_SIZE);
     }
+    setMaxAllowedStep((prev) => Math.max(prev, newStep));
+  };
 
-    if (step === 15 * 3 && !isOtpScreen) {
-      // const email = form.getValues("email");
-      try {
-        setIsLoading(true);
-        const res = await fetch("/api/request-verification-code", {
-          body: JSON.stringify({ email }),
-          method: "POST",
-        });
-        const data = await res.json();
-        console.log({ data });
-        if (res.ok) {
-          toast.success("Verification Code Sent", {
-            description: "Check your email for the code.",
-          });
-          setIsOtpScreen(true);
-          setIsLoading(false);
-          setStepNumber(3);
-          setStep(15 * 3);
-          return data;
-        }
-        if (res.status === 500) {
-          toast.error("Something went wrong", {
-            description: "This email is already being used.",
-          });
-        } else {
-          toast.error("Something went wrong", {
-            description: "There was a problem getting the verification code.",
-          });
-        }
+  // Reusable stepGuard: validates relevant fields for the current step
+  const stepGuard = async (currentStep: number): Promise<boolean> => {
+    if (currentStep < 15 * 2) return true;
+    const fieldsByStep: Record<number, (keyof signUpValues | string)[]> = {
+      [15 * 2]: ["firstName", "lastName"],
+      [15 * 3]: ["email"],
+      [15 * 4]: ["phoneNumber"],
+      [15 * 5]: ["passwordObj.password", "passwordObj.confirmPassword"],
+      [15 * 6]: ["address"],
+      [15 * 7]: ["dob"],
+    };
 
-        setIsLoading(false);
-        setStepNumber(3);
-        setStep(15 * 3);
-        return null;
-      } catch (e: any) {
-        setIsLoading(false);
-        console.log("Error sending OTP", e);
+    const fields = fieldsByStep[currentStep];
+    if (!fields) return true;
+
+    const valid = await form.trigger(fields as any);
+
+    if (!valid) {
+      switch (currentStep) {
+        case 15 * 2:
+          toast.error("Please enter your first and last name to continue.");
+          break;
+        case 15 * 3:
+          toast.error("Please enter a valid email address to continue.");
+          break;
+        case 15 * 4:
+          toast.error(
+            "Please enter a valid Nigerian phone number to continue."
+          );
+          break;
+        case 15 * 5:
+          toast.error(
+            "Please choose a strong password and confirm it to continue."
+          );
+          break;
+        case 15 * 6:
+          toast.error("Please enter your address to continue.");
+          break;
+        case 15 * 7:
+          toast.error("Please select your date of birth to continue.");
+          break;
+        default:
+          toast.error("Please complete this step before continuing.");
+          break;
       }
     }
+
+    return valid;
   };
 
-  const handleShowConfirmPasswordScreen = () => {
-    setIsConfirmPasswordScreen(true);
-    if (confirmPasswordValues) {
-      setIsConfirmPasswordScreen(false);
-      setStep(step + 15);
-      setStepNumber(stepNumber + 1);
+  // Prevent manual step skipping via URL / parent manipulation
+  useEffect(() => {
+    if (step > maxAllowedStep) {
+      goToStep(maxAllowedStep, maxAllowedStep / STEP_SIZE);
+      toast.error(
+        "Please follow the signup steps in order before jumping ahead."
+      );
     }
+  }, [step, maxAllowedStep]);
 
-    // if (isConfirmPasswordScreen === true) {
-    //   setIsConfirmPasswordScreen(false);
-    //   setStep(step + 15);
-    //   setStepNumber(stepNumber + 1);
-    // }
-  };
-
-  const handlePreviousStep = () => {
-    // setStep(step - 15);
-    setStepNumber(stepNumber - 1);
-    setIsOtpScreen(false);
-  };
-
+  // OTP countdown
   useEffect(() => {
     if (!isOtpScreen) {
-      setTime("0:00");
+      setTime("00:00");
       return;
     }
 
@@ -212,56 +206,67 @@ export default function IndividualSignUpForm({
         );
       },
       () => {
-        toast.error("The verifiction code has expired", {
+        toast.error("The verification code has expired", {
           description:
             "Enter your email address again for a new verification code.",
         });
         setIsOtpScreen(false);
-        console.log("Countdown finished!");
       }
     );
 
     return stop;
   }, [isOtpScreen, resendOTP]);
 
+  // Live password strength detection (auto-detect bad passwords)
   useEffect(() => {
-    const checkPassword = () => {
-      if (hasLowercase) {
-        PASSWORDCHECK[0].state = true;
-      } else {
-        PASSWORDCHECK[0].state = false;
-      }
+    // update PASSWORDCHECK visual flags
+    if (hasLowercase) {
+      PASSWORDCHECK[0].state = true;
+    } else {
+      PASSWORDCHECK[0].state = false;
+    }
 
-      if (hasEightCharacters) {
-        PASSWORDCHECK[1].state = true;
-      } else {
-        PASSWORDCHECK[1].state = false;
-      }
+    if (hasEightCharacters) {
+      PASSWORDCHECK[1].state = true;
+    } else {
+      PASSWORDCHECK[1].state = false;
+    }
 
-      if (hasUppercase) {
-        PASSWORDCHECK[2].state = true;
-      } else {
-        PASSWORDCHECK[2].state = false;
-      }
+    if (hasUppercase) {
+      PASSWORDCHECK[2].state = true;
+    } else {
+      PASSWORDCHECK[2].state = false;
+    }
 
-      if (hasNumber) {
-        PASSWORDCHECK[3].state = true;
-      } else {
-        PASSWORDCHECK[3].state = false;
-      }
+    if (hasNumber) {
+      PASSWORDCHECK[3].state = true;
+    } else {
+      PASSWORDCHECK[3].state = false;
+    }
 
-      if (
-        (!hasEightCharacters || !hasLowercase || !hasNumber || !hasUppercase) &&
-        isConfirmPasswordScreen === true
-      ) {
-        setIsLoading(true);
-      } else {
-        setIsLoading(false);
-      }
-    };
-    checkPassword();
-  }, [hasEightCharacters, hasLowercase, hasUppercase, hasNumber]);
-  //   console.log(PASSWORDCHECK[1].state);
+    // Attach a live error to the password field if it's weak
+    if (!passwordValues) {
+      form.clearErrors("passwordObj.password");
+      return;
+    }
+
+    if (!hasEightCharacters || !hasLowercase || !hasUppercase || !hasNumber) {
+      form.setError("passwordObj.password", {
+        type: "manual",
+        message:
+          "Password is too weak. Please meet all the requirements listed above.",
+      });
+    } else {
+      form.clearErrors("passwordObj.password");
+    }
+  }, [
+    hasEightCharacters,
+    hasLowercase,
+    hasUppercase,
+    hasNumber,
+    passwordValues,
+    form,
+  ]);
 
   const handleResendOTP = async () => {
     try {
@@ -284,17 +289,14 @@ export default function IndividualSignUpForm({
         description: "There was a problem getting the verification code.",
       });
       setIsLoading(false);
-      setIsLoading(false);
-
       return null;
     } catch (e: any) {
       setIsLoading(false);
-      setIsLoading(false);
-
       console.log("Error resending OTP Code", e);
     }
   };
 
+  // Auto-verify OTP once 6 digits are entered
   useEffect(() => {
     const verifyOTP = async () => {
       if (otpWatch.length === 6) {
@@ -306,23 +308,24 @@ export default function IndividualSignUpForm({
             body: JSON.stringify({ email, code }),
             method: "POST",
           });
-          console.log({ email, code });
           const data = await res.json();
           if (res.ok) {
             setIsLoading(false);
             setIsOtpScreen(false);
+            setIsEmailVerified(true);
 
             toast.success("Email verified successfully", {
               description: "Your email has been verified successfully",
             });
-            setStep(step + 15);
-            setStepNumber(stepNumber + 1);
+
+            // Move to phone number step after successful email verification
+            goToStep(15 * 4, 4);
             return data;
           }
-          setTime("0");
+          setTime("00:00");
           setIsLoading(false);
-          setStepNumber(3);
-          setStep(15 * 3);
+          // Stay / return on email step
+          goToStep(15 * 3, 3);
           if (res.status === 400) {
             toast.error("Something went wrong", {
               description: "OTP Code is not valid, please try again",
@@ -330,7 +333,7 @@ export default function IndividualSignUpForm({
           } else {
             toast.error("Something went wrong", {
               description:
-                "There was a problem verifying your email address please try again",
+                "There was a problem verifying your email address. Please try again.",
             });
           }
         } catch (e) {
@@ -340,46 +343,144 @@ export default function IndividualSignUpForm({
       }
     };
     verifyOTP();
-  }, [otpWatch]);
+  }, [otpWatch, email, code]);
 
   const handleDisplayPassword = () => {
-    setPassword(!password);
+    setPassword((prev) => !prev);
   };
 
-  // const handleImageUpload = async (file: File) => {
-  //   setIsUploadingImage(true);
+  // Back navigation
+  const handlePreviousStep = () => {
+    // First handle sub-screens
+    if (isOtpScreen) {
+      setIsOtpScreen(false);
+      return;
+    }
 
-  //   const formData = new FormData();
-  //   formData.append("file", file);
+    if (isConfirmPasswordScreen) {
+      setIsConfirmPasswordScreen(false);
+      return;
+    }
 
-  //   try {
-  //     const response = await fetch("/api/upload", {
-  //       method: "POST",
-  //       body: formData,
-  //     });
+    if (step <= 15 * 2) return; // nothing before first step
 
-  //     const result = await response.json();
-  //     if (result.success) {
-  //       form.setValue("profilePhoto", result.url);
-  //       toast.success("Profile image uploaded successfully");
-  //     } else {
-  //       toast.error(result.error || "Failed to upload profile image");
-  //     }
-  //   } catch (error) {
-  //     toast.error("An error occurred while uploading the profile image");
-  //     console.error(error);
-  //   } finally {
-  //     setIsUploadingImage(false);
-  //   }
-  // };
+    const newStep = step - STEP_SIZE;
+    const newStepNumber = Math.max(2, stepNumber - 1);
 
-  // const handleDeleteImage = () => {
-  //   form.setValue("profilePhoto", "");
-  // };
+    setStep(newStep);
+    setStepNumber(newStepNumber);
+  };
+
+  // Main "Continue / Next" flow with validation + stepGuard
+  const handleNextStep = async () => {
+    if (loading) return;
+
+    // If user somehow jumped ahead without email verification, snap them back
+    if (step > 15 * 3 && !isEmailVerified) {
+      goToStep(15 * 3, 3);
+      toast.error("Please verify your email with the OTP before continuing.");
+      return;
+    }
+
+    // Allow moving from step 15 (account type) → step 30 freely
+    if (step === 15) {
+      goToStep(30, 2);
+      return;
+    }
+
+    // Step 2 -> Step 3 (names -> email)
+    if (step === 15 * 2) {
+      const valid = await stepGuard(15 * 2);
+      if (!valid) return;
+      goToStep(15 * 3, 3);
+      return;
+    }
+
+    // Step 3 (email) -> request OTP (stay on step, open OTP screen)
+    if (step === 15 * 3 && !isOtpScreen) {
+      const valid = await stepGuard(15 * 3);
+      if (!valid) return;
+
+      try {
+        setIsLoading(true);
+        const res = await fetch("/api/request-verification-code", {
+          body: JSON.stringify({ email }),
+          method: "POST",
+        });
+        const data = await res.json();
+        if (res.ok) {
+          toast.success("Verification Code Sent", {
+            description: "Check your email for the code.",
+          });
+          setIsOtpScreen(true);
+        } else if (res.status === 500) {
+          toast.error("Something went wrong", {
+            description: "This email is already being used.",
+          });
+        } else {
+          toast.error("Something went wrong", {
+            description: "There was a problem getting the verification code.",
+          });
+        }
+        setIsLoading(false);
+        return data;
+      } catch (e: any) {
+        setIsLoading(false);
+        console.log("Error sending OTP", e);
+      }
+      return;
+    }
+
+    // Step 4 -> Step 5 (phone -> password)
+    if (step === 15 * 4) {
+      const valid = await stepGuard(15 * 4);
+      if (!valid) return;
+      goToStep(15 * 5, 5);
+      return;
+    }
+
+    // Step 6 -> Step 7 (address -> dob)
+    if (step === 15 * 6) {
+      const valid = await stepGuard(15 * 6);
+      if (!valid) return;
+      goToStep(15 * 7, 7);
+      return;
+    }
+  };
+
+  // Password + confirm password flow
+  const handleShowConfirmPasswordScreen = async () => {
+    // First click: move from password input to confirm-password sub-screen
+    if (!isConfirmPasswordScreen) {
+      const validPasswordOnly = await form.trigger("passwordObj.password");
+      if (!validPasswordOnly) {
+        toast.error(
+          "Please choose a strong password before moving to the next step."
+        );
+        return;
+      }
+      setIsConfirmPasswordScreen(true);
+      return;
+    }
+
+    // Second click (while confirm screen is open): validate both and move forward
+    const valid = await stepGuard(15 * 5);
+    if (!valid) {
+      toast.error("Your passwords must match to continue.");
+      return;
+    }
+
+    setIsConfirmPasswordScreen(false);
+    // After password step, go to address step (step 6)
+    goToStep(15 * 6, 6);
+  };
 
   const handleSubmit = async (data: signUpValues) => {
-    setIsBuidlingProfile(true);
+    const finalValid = await stepGuard(15 * 7);
+    if (!finalValid) return;
+
     setIsLoading(true);
+    setIsBuidlingProfile(true);
 
     const payload = {
       firstName: data.firstName,
@@ -406,6 +507,7 @@ export default function IndividualSignUpForm({
         services: false,
       },
     };
+
     try {
       const res = await fetch(
         `/api/sign-up?userType=${encodeURIComponent(userType)}`,
@@ -417,12 +519,14 @@ export default function IndividualSignUpForm({
           },
         }
       );
-      const data = await res.json();
+      const responseData = await res.json();
       if (res.ok) {
         setIsLoading(false);
+
+        // Attempt automatic sign in
         const signInResult = await signIn("credentials", {
-          email: data.email,
-          password: data.password,
+          email: payload.email,
+          password: payload.password,
           redirect: false,
         });
 
@@ -430,7 +534,6 @@ export default function IndividualSignUpForm({
           const session = await getSession();
           const token = (session as any)?.user?.accessToken;
 
-          // pull safe redirect (from sessionStorage)
           const safe = getSafeRedirect(getRedirect());
           setIsBuidlingProfile(true);
 
@@ -449,35 +552,41 @@ export default function IndividualSignUpForm({
 
             window.location.href = "/";
           }, 1500);
+
+          return;
         }
 
+        // If auto sign-in fails, fall back to explicit login
         const r = getRedirect();
         toast.success("Account created! Please sign in.");
         window.location.href = `/sign-in?redirect=${encodeURIComponent(r)}`;
-        return data;
+        return responseData;
       }
+
       setIsBuidlingProfile(false);
-      setStep(15);
+      goToStep(15 * 2, 2);
       toast.error("Something is wrong", {
         description:
-          "There was a problem creating your account please try again",
+          "There was a problem creating your account. Please try again.",
       });
       return null;
     } catch (e) {
       console.log("Problem creating account", e);
+      setIsBuidlingProfile(false);
     }
   };
-  console.log(form.formState.errors);
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)}>
+        {/* STEP 2: Names */}
         <div
           className={` ${
             step === 15 * 2
               ? " inline translate-x-0 "
               : " hidden -translate-x-full  "
           } hidden transition-all w-full mt-[20px]`}>
+          {/* No back arrow on first step */}
           <BiRename className=" w-[32px] h-[32px]" />
           <FormField
             control={form.control}
@@ -489,8 +598,8 @@ export default function IndividualSignUpForm({
                 </Label>
                 <FormControl>
                   <Input
+                    required
                     {...field}
-                    // placeholder=" Enter your first name"
                     className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                   />
                 </FormControl>
@@ -508,8 +617,8 @@ export default function IndividualSignUpForm({
                 </Label>
                 <FormControl>
                   <Input
+                    required
                     {...field}
-                    // placeholder=" Enter your last name"
                     className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                   />
                 </FormControl>
@@ -518,12 +627,20 @@ export default function IndividualSignUpForm({
             )}
           />
         </div>
+
+        {/* STEP 3: Email / OTP */}
         <div
           className={` ${
             step === 15 * 3 && isOtpScreen === false
               ? " inline translate-x-0 "
               : " hidden -translate-x-full  "
           } hidden transition-all w-full mt-[20px]`}>
+          {step > 15 * 2 && !isOtpScreen && (
+            <GoArrowLeft
+              onClick={handlePreviousStep}
+              className=" w-[32px] h-[32px] mb-4"
+            />
+          )}
           <MdEmail className=" w-[32px] h-[32px]" />
           <FormField
             control={form.control}
@@ -535,8 +652,8 @@ export default function IndividualSignUpForm({
                 </Label>
                 <FormControl>
                   <Input
+                    required
                     {...field}
-                    // placeholder="What’s your email?"
                     className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                   />
                 </FormControl>
@@ -545,9 +662,11 @@ export default function IndividualSignUpForm({
             )}
           />
         </div>
+
+        {/* OTP SCREEN (sub-step of email) */}
         <div
           className={`${
-            isOtpScreen == true
+            isOtpScreen
               ? " inline translate-x-0 "
               : " hidden -translate-x-full  "
           } hidden transition-all w-full mt-[20px]`}>
@@ -556,7 +675,6 @@ export default function IndividualSignUpForm({
             className=" w-[32px] h-[32px]"
           />
           <Form {...otpForm}>
-            {/* <form> */}
             <FormField
               name="otp"
               control={otpForm.control}
@@ -570,8 +688,6 @@ export default function IndividualSignUpForm({
                       <Input
                         {...field}
                         maxLength={6}
-                        // onChange={handleVerifyOTP}
-                        // placeholder="Enter OTP code"
                         className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                       />
                       <p className=" right-0 top-1/2 text-[12px] -translate-y-1/2 absolute">
@@ -580,21 +696,29 @@ export default function IndividualSignUpForm({
                     </div>
                   </FormControl>
                   <FormDescription className=" text-[12px]">
-                    You only have to enter an OTP code we sent to your email
+                    You only have to enter the OTP code we sent to your email
                     address - {email}
                   </FormDescription>
+                  <FormMessage className=" text-accent" />
                 </FormItem>
               )}
             />
-            {/* </form> */}
           </Form>
         </div>
+
+        {/* STEP 4: Phone */}
         <div
           className={` ${
             step === 15 * 4
               ? " inline translate-x-0 "
               : " hidden -translate-x-full  "
           } hidden transition-all w-full mt-[20px]`}>
+          {step >= 15 * 4 && (
+            <GoArrowLeft
+              onClick={handlePreviousStep}
+              className=" w-[32px] h-[32px] mb-4"
+            />
+          )}
           <FaPhoneAlt className=" w-[32px] h-[32px]" />
           <FormField
             control={form.control}
@@ -606,18 +730,9 @@ export default function IndividualSignUpForm({
                 </Label>
                 <FormControl>
                   <div className=" mt-[15px] items-center flex gap-5">
-                    {/* <Select>
-                      <SelectTrigger className=" text-[24px] font-extrabold text-white border-t-0 border-l-0 rounded-none border-r-0">
-                        <SelectValue placeholder="+234" />
-                      </SelectTrigger>
-                      <SelectContent className=" border-0 focus:bg-secondary rounded-[20px] text-white bg-secondary">
-                        <SelectItem value="+234">+234</SelectItem>
-                        <SelectItem value="+224">+224</SelectItem>
-                      </SelectContent>
-                    </Select> */}
                     <Input
+                      required
                       {...field}
-                      // placeholder=" Enter ssyour first name"
                       className="  text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                     />
                   </div>
@@ -627,12 +742,20 @@ export default function IndividualSignUpForm({
             )}
           />
         </div>
+
+        {/* STEP 5: Password */}
         <div
           className={` ${
-            step === 15 * 5 && isConfirmPasswordScreen === false
+            step === 15 * 5 && !isConfirmPasswordScreen
               ? " inline translate-x-0 "
               : " hidden -translate-x-full  "
           } hidden transition-all w-full mt-[20px]`}>
+          {step >= 15 * 5 && !isConfirmPasswordScreen && (
+            <GoArrowLeft
+              onClick={handlePreviousStep}
+              className=" w-[32px] h-[32px] mb-4"
+            />
+          )}
           <MdOutlinePassword className=" w-[32px] h-[32px]" />
           <FormField
             control={form.control}
@@ -640,14 +763,14 @@ export default function IndividualSignUpForm({
             render={({ field }) => (
               <FormItem>
                 <Label className=" mt-[10px] font-extrabold text-[24px]">
-                  Setup your password
+                  Create your password
                 </Label>
                 <FormControl>
                   <div className=" relative">
                     <Input
+                      required
                       {...field}
-                      // placeholder="What’s your email?"
-                      type={`${password ? "password" : "text"}`}
+                      type={password ? "password" : "text"}
                       className=" mt-[10px] pr-[50px]  py-[20px] text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                     />
                     {!password ? (
@@ -675,20 +798,21 @@ export default function IndividualSignUpForm({
                     </div>
                   ))}
                 </div>
+                <FormMessage className=" text-accent" />
               </FormItem>
             )}
           />
         </div>
+
+        {/* Confirm Password sub-screen */}
         <div
           className={`${
-            isConfirmPasswordScreen === true
+            isConfirmPasswordScreen
               ? " inline translate-x-0 "
               : " hidden -translate-x-full  "
           } hidden transition-all w-full mt-[20px]`}>
           <GoArrowLeft
-            onClick={() => {
-              setIsConfirmPasswordScreen(false);
-            }}
+            onClick={handlePreviousStep}
             className=" w-[32px] h-[32px]"
           />
           <FormField
@@ -702,9 +826,9 @@ export default function IndividualSignUpForm({
                 <FormControl>
                   <div className=" relative">
                     <Input
+                      required
                       {...field}
-                      // placeholder="What’s your email?"
-                      type={`${password ? "password" : "text"}`}
+                      type={password ? "password" : "text"}
                       className=" mt-[10px] pr-[50px]  py-[20px] text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                     />
                     {!password ? (
@@ -725,12 +849,20 @@ export default function IndividualSignUpForm({
             )}
           />
         </div>
+
+        {/* STEP 6: Address */}
         <div
           className={` ${
             step === 15 * 6
               ? " inline translate-x-0 "
               : " hidden  -translate-x-full "
           } hidden transition-all w-full mt-[20px]`}>
+          {step >= 15 * 6 && (
+            <GoArrowLeft
+              onClick={handlePreviousStep}
+              className=" w-[32px] h-[32px] mb-4"
+            />
+          )}
           <div className="">
             <p className=" text-[24px] font-extrabold">
               Personalize your profile with your address
@@ -745,12 +877,10 @@ export default function IndividualSignUpForm({
                       <FormControl>
                         <div className="relative">
                           <MdLocationOn className="absolute top-1/2 -translate-y-1/2 w-[24px] h-[24px]" />
-
                           <GoogleAddressField
                             value={field.value ?? ""}
                             onChange={(val) => field.onChange(val)}
                             onSelectAddress={(structured) => {
-                              console.log("Structured address:", structured);
                               form.setValue("structuredAddress", structured);
                             }}
                           />
@@ -765,6 +895,8 @@ export default function IndividualSignUpForm({
             </ScrollArea>
           </div>
         </div>
+
+        {/* STEP 7: DOB + submit */}
         <div
           className={` ${
             step === 15 * 7
@@ -772,6 +904,10 @@ export default function IndividualSignUpForm({
               : " hidden -translate-x-full "
           } hidden transition-all w-full mt-[20px]`}>
           <div className=" px-[20px] py-[100px]  bg-black w-screen  flex flex-col gap-[19px] fixed left-0 top-0 z-30 h-[100svh]">
+            <GoArrowLeft
+              onClick={handlePreviousStep}
+              className=" w-[32px] h-[32px]"
+            />
             <div className="">
               <p className=" text-[32px] font-bold">When’s your birthday?</p>
               <p className=" w-[70%] text-[18px]">
@@ -815,9 +951,6 @@ export default function IndividualSignUpForm({
                         />
                       </PopoverContent>
                     </Popover>
-                    {/* <FormDescription>
-                    Your date of birth is used to calculate your age.
-                  </FormDescription> */}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -831,6 +964,7 @@ export default function IndividualSignUpForm({
             </Button>
           </div>
         </div>
+
         {isBuildingProfile ? (
           <div className="fixed left-0 top-0 z-30 h-[100svh]">
             <div className=" relative">
@@ -852,8 +986,8 @@ export default function IndividualSignUpForm({
                 <div className=" absolute  text-center mb-[20px] bottom-0">
                   <p className=" text-[18px]">Did you know?</p>
                   <p className=" mx-auto w-[70%] text-[12px]">
-                    You can share your contact information with a tap easy and
-                    fast contactless lifestyle
+                    You can share your contact information with a tap – easy and
+                    fast contactless lifestyle.
                   </p>
                 </div>
               </div>
@@ -862,8 +996,9 @@ export default function IndividualSignUpForm({
         ) : (
           <div className=""></div>
         )}
+
+        {/* Bottom CTA area */}
         <div className="  absolute bottom-0 mb-[30px] w-full">
-          {/* <p className=" text-center">{userType}</p> */}
           {isOtpScreen ? (
             <Button
               onClick={handleResendOTP}

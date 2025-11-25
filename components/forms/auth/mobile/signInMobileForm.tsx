@@ -68,12 +68,16 @@ export default function MobileSignInForm({
     }
   }, [emailWatch]);
 
-  // const handleRedirectToForgotPassword = () => {
-  //   router.push("/forgot-password");
-  // };
-
   const sp = useSearchParams();
   const prompt = sp.get("prompt") === "login" ? "&prompt=login" : "";
+
+  const forgotPasswordHref = callbackUrl
+    ? `/forgot-password?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
+    : `/forgot-password${prompt}`;
+
+  const handleRedirectToForgotPassword = () => {
+    router.push(forgotPasswordHref);
+  };
 
   const signUpHref = callbackUrl
     ? `/sign-up?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
@@ -164,7 +168,7 @@ export default function MobileSignInForm({
             linkText="Create account"
           />
         </div>
-        {/* <div className=" left-0 absolute top-0 w-screen ">
+        <div className=" left-0 absolute top-0 w-screen ">
           {step === 2 ? (
             <AuthHeader
               message="Forgot password?"
@@ -173,7 +177,7 @@ export default function MobileSignInForm({
               linkText="Click here to retrieve account"
             />
           ) : null}
-        </div> */}
+        </div>
         <div className=" h-[100svh] relative ">
           <div className=" pt-6  flex gap-3 items-center">
             <GoArrowLeft className=" w-[32px] h-[32px]" onClick={router.back} />
