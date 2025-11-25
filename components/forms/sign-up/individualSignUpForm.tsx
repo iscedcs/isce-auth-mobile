@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SlideStep } from "@/components/ui/slide-step";
 import { PASSWORDCHECK } from "@/lib/const";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 import { userType } from "@/lib/types/auth";
@@ -580,390 +581,411 @@ export default function IndividualSignUpForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)}>
         {/* STEP 2: Names */}
-        <div
-          className={` ${
-            step === 15 * 2
-              ? " inline translate-x-0 "
-              : " hidden -translate-x-full  "
-          } hidden transition-all w-full mt-[20px]`}>
-          {/* No back arrow on first step */}
-          <BiRename className=" w-[32px] h-[32px]" />
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem>
-                <Label className=" mt-[10px] font-extrabold text-[24px]">
-                  Enter your first name*
-                </Label>
-                <FormControl>
-                  <Input
-                    required
-                    {...field}
-                    className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
-                  />
-                </FormControl>
-                <FormMessage className=" text-accent" />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem className=" mt-[20px]">
-                <Label className=" mt-[10px] font-extrabold text-[24px]">
-                  Enter your last name*
-                </Label>
-                <FormControl>
-                  <Input
-                    required
-                    {...field}
-                    className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
-                  />
-                </FormControl>
-                <FormMessage className=" text-accent" />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* STEP 3: Email / OTP */}
-        <div
-          className={` ${
-            step === 15 * 3 && isOtpScreen === false
-              ? " inline translate-x-0 "
-              : " hidden -translate-x-full  "
-          } hidden transition-all w-full mt-[20px]`}>
-          {step > 15 * 2 && !isOtpScreen && (
-            <GoArrowLeft
-              onClick={handlePreviousStep}
-              className=" w-[32px] h-[32px] mb-4"
-            />
-          )}
-          <MdEmail className=" w-[32px] h-[32px]" />
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <Label className=" mt-[10px] font-extrabold text-[24px]">
-                  What’s your email?
-                </Label>
-                <FormControl>
-                  <Input
-                    required
-                    {...field}
-                    className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
-                  />
-                </FormControl>
-                <FormMessage className=" text-accent" />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* OTP SCREEN (sub-step of email) */}
-        <div
-          className={`${
-            isOtpScreen
-              ? " inline translate-x-0 "
-              : " hidden -translate-x-full  "
-          } hidden transition-all w-full mt-[20px]`}>
-          <GoArrowLeft
-            onClick={handlePreviousStep}
-            className=" w-[32px] h-[32px]"
-          />
-          <Form {...otpForm}>
+        <SlideStep
+          show={step === 15 * 2 && !isOtpScreen && !isConfirmPasswordScreen}>
+          <div
+            className={` ${
+              step === 15 * 2
+                ? " inline translate-x-0 "
+                : " hidden -translate-x-full  "
+            } hidden transition-all w-full mt-[20px]`}>
+            {/* No back arrow on first step */}
+            <BiRename className=" w-[32px] h-[32px]" />
             <FormField
-              name="otp"
-              control={otpForm.control}
+              control={form.control}
+              name="firstName"
               render={({ field }) => (
                 <FormItem>
                   <Label className=" mt-[10px] font-extrabold text-[24px]">
-                    Enter OTP code*
+                    Enter your first name*
                   </Label>
                   <FormControl>
-                    <div className=" relative">
-                      <Input
-                        {...field}
-                        maxLength={6}
-                        className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
-                      />
-                      <p className=" right-0 top-1/2 text-[12px] -translate-y-1/2 absolute">
-                        {time}
-                      </p>
-                    </div>
+                    <Input
+                      required
+                      {...field}
+                      className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
+                    />
                   </FormControl>
-                  <FormDescription className=" text-[12px]">
-                    You only have to enter the OTP code we sent to your email
-                    address - {email}
-                  </FormDescription>
                   <FormMessage className=" text-accent" />
                 </FormItem>
               )}
             />
-          </Form>
-        </div>
-
-        {/* STEP 4: Phone */}
-        <div
-          className={` ${
-            step === 15 * 4
-              ? " inline translate-x-0 "
-              : " hidden -translate-x-full  "
-          } hidden transition-all w-full mt-[20px]`}>
-          {step >= 15 * 4 && (
-            <GoArrowLeft
-              onClick={handlePreviousStep}
-              className=" w-[32px] h-[32px] mb-4"
-            />
-          )}
-          <FaPhoneAlt className=" w-[32px] h-[32px]" />
-          <FormField
-            control={form.control}
-            name="phoneNumber"
-            render={({ field }) => (
-              <FormItem>
-                <Label className=" w-[70%] mt-[10px] font-extrabold text-[24px]">
-                  What’s your phone number?
-                </Label>
-                <FormControl>
-                  <div className=" mt-[15px] items-center flex gap-5">
+            <FormField
+              control={form.control}
+              name="lastName"
+              render={({ field }) => (
+                <FormItem className=" mt-[20px]">
+                  <Label className=" mt-[10px] font-extrabold text-[24px]">
+                    Enter your last name*
+                  </Label>
+                  <FormControl>
                     <Input
                       required
                       {...field}
-                      className="  text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
+                      className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                     />
-                  </div>
-                </FormControl>
-                <FormMessage className=" text-accent" />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* STEP 5: Password */}
-        <div
-          className={` ${
-            step === 15 * 5 && !isConfirmPasswordScreen
-              ? " inline translate-x-0 "
-              : " hidden -translate-x-full  "
-          } hidden transition-all w-full mt-[20px]`}>
-          {step >= 15 * 5 && !isConfirmPasswordScreen && (
-            <GoArrowLeft
-              onClick={handlePreviousStep}
-              className=" w-[32px] h-[32px] mb-4"
+                  </FormControl>
+                  <FormMessage className=" text-accent" />
+                </FormItem>
+              )}
             />
-          )}
-          <MdOutlinePassword className=" w-[32px] h-[32px]" />
-          <FormField
-            control={form.control}
-            name="passwordObj.password"
-            render={({ field }) => (
-              <FormItem>
-                <Label className=" mt-[10px] font-extrabold text-[24px]">
-                  Create your password
-                </Label>
-                <FormControl>
-                  <div className=" relative">
-                    <Input
-                      required
-                      {...field}
-                      type={password ? "password" : "text"}
-                      className=" mt-[10px] pr-[50px]  py-[20px] text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
-                    />
-                    {!password ? (
-                      <FaRegEye
-                        onClick={handleDisplayPassword}
-                        className=" absolute right-0 -translate-y-1 top-1/2  w-[24px] h-[24px]"
-                      />
-                    ) : (
-                      <LuEyeClosed
-                        onClick={handleDisplayPassword}
-                        className=" absolute right-0 -translate-y-1 top-1/2  w-[24px] h-[24px]"
-                      />
-                    )}
-                  </div>
-                </FormControl>
-                <div className=" text-[12px] mt-[10px]">
-                  {PASSWORDCHECK.map((check) => (
-                    <div
-                      key={check.key}
-                      className={`flex gap-2 items-center ${
-                        check.state === true ? " text-white " : " text-accent"
-                      } `}>
-                      {check.state === true ? <IoMdCheckmark /> : <IoMdClose />}
-                      <div>{check.message}</div>
-                    </div>
-                  ))}
-                </div>
-                <FormMessage className=" text-accent" />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Confirm Password sub-screen */}
-        <div
-          className={`${
-            isConfirmPasswordScreen
-              ? " inline translate-x-0 "
-              : " hidden -translate-x-full  "
-          } hidden transition-all w-full mt-[20px]`}>
-          <GoArrowLeft
-            onClick={handlePreviousStep}
-            className=" w-[32px] h-[32px]"
-          />
-          <FormField
-            name="passwordObj.confirmPassword"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <Label className=" mt-[10px] font-extrabold text-[24px]">
-                  Confirm your password
-                </Label>
-                <FormControl>
-                  <div className=" relative">
-                    <Input
-                      required
-                      {...field}
-                      type={password ? "password" : "text"}
-                      className=" mt-[10px] pr-[50px]  py-[20px] text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
-                    />
-                    {!password ? (
-                      <FaRegEye
-                        onClick={handleDisplayPassword}
-                        className=" absolute right-0 -translate-y-1 top-1/2  w-[24px] h-[24px]"
-                      />
-                    ) : (
-                      <LuEyeClosed
-                        onClick={handleDisplayPassword}
-                        className=" absolute right-0 -translate-y-1 top-1/2  w-[24px] h-[24px]"
-                      />
-                    )}
-                  </div>
-                </FormControl>
-                <FormMessage className=" text-accent" />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* STEP 6: Address */}
-        <div
-          className={` ${
-            step === 15 * 6
-              ? " inline translate-x-0 "
-              : " hidden  -translate-x-full "
-          } hidden transition-all w-full mt-[20px]`}>
-          {step >= 15 * 6 && (
-            <GoArrowLeft
-              onClick={handlePreviousStep}
-              className=" w-[32px] h-[32px] mb-4"
-            />
-          )}
-          <div className="">
-            <p className=" text-[24px] font-extrabold">
-              Personalize your profile with your address
-            </p>
-            <ScrollArea className=" h-[400px]">
-              <div className=" mt-[10px]">
-                <FormField
-                  name="address"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <div className="relative">
-                          <MdLocationOn className="absolute top-1/2 -translate-y-1/2 w-[24px] h-[24px]" />
-                          <GoogleAddressField
-                            value={field.value ?? ""}
-                            onChange={(val) => field.onChange(val)}
-                            onSelectAddress={(structured) => {
-                              form.setValue("structuredAddress", structured);
-                            }}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage className="text-accent" />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <ScrollBar orientation="vertical" />
-            </ScrollArea>
           </div>
-        </div>
+        </SlideStep>
 
-        {/* STEP 7: DOB + submit */}
-        <div
-          className={` ${
-            step === 15 * 7
-              ? " inline translate-x-0 "
-              : " hidden -translate-x-full "
-          } hidden transition-all w-full mt-[20px]`}>
-          <div className=" px-[20px] py-[100px]  bg-black w-screen  flex flex-col gap-[19px] fixed left-0 top-0 z-30 h-[100svh]">
+        {/* STEP 3: Email / OTP */}
+        <SlideStep show={step === 15 * 3 && !isOtpScreen}>
+          <div
+            className={` ${
+              step === 15 * 3 && isOtpScreen === false
+                ? " inline translate-x-0 "
+                : " hidden -translate-x-full  "
+            } hidden transition-all w-full mt-[20px]`}>
+            {step > 15 * 2 && !isOtpScreen && (
+              <GoArrowLeft
+                onClick={handlePreviousStep}
+                className=" w-[32px] h-[32px] mb-4"
+              />
+            )}
+            <MdEmail className=" w-[32px] h-[32px]" />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <Label className=" mt-[10px] font-extrabold text-[24px]">
+                    What’s your email?
+                  </Label>
+                  <FormControl>
+                    <Input
+                      required
+                      {...field}
+                      className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
+                    />
+                  </FormControl>
+                  <FormMessage className=" text-accent" />
+                </FormItem>
+              )}
+            />
+          </div>
+        </SlideStep>
+
+        {/* OTP SCREEN (sub-step of email) */}
+        <SlideStep show={isOtpScreen}>
+          <div
+            className={`${
+              isOtpScreen
+                ? " inline translate-x-0 "
+                : " hidden -translate-x-full  "
+            } hidden transition-all w-full mt-[20px]`}>
             <GoArrowLeft
               onClick={handlePreviousStep}
               className=" w-[32px] h-[32px]"
             />
-            <div className="">
-              <p className=" text-[32px] font-bold">When’s your birthday?</p>
-              <p className=" w-[70%] text-[18px]">
-                Your birthday won’t be shown publicly.
-              </p>
+            <Form {...otpForm}>
               <FormField
-                control={form.control}
-                name="dob"
+                name="otp"
+                control={otpForm.control}
                 render={({ field }) => (
-                  <FormItem className="flex w-full flex-col">
-                    <Popover>
-                      <PopoverTrigger className="w-full" asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              " text-[18px] py-[20px] mt-[30px] border-l-0 px-0 border-r-0 border-t-0 w-full rounded-none text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}>
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-full p-0 bg-secondary mt-[10px] text-white border-none"
-                        align="center">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          className="w-full bg-black text-white"
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
-                          captionLayout="dropdown"
+                  <FormItem>
+                    <Label className=" mt-[10px] font-extrabold text-[24px]">
+                      Enter OTP code*
+                    </Label>
+                    <FormControl>
+                      <div className=" relative">
+                        <Input
+                          {...field}
+                          maxLength={6}
+                          className=" text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
                         />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
+                        <p className=" right-0 top-1/2 text-[12px] -translate-y-1/2 absolute">
+                          {time}
+                        </p>
+                      </div>
+                    </FormControl>
+                    <FormDescription className=" text-[12px]">
+                      You only have to enter the OTP code we sent to your email
+                      address - {email}
+                    </FormDescription>
+                    <FormMessage className=" text-accent" />
                   </FormItem>
                 )}
               />
-            </div>
-            <Button
-              type="submit"
-              disabled={!form.formState.isValid || loading}
-              className=" w-full rounded-[12px] font-semibold py-[24px]">
-              Finish setup
-            </Button>
+            </Form>
           </div>
-        </div>
+        </SlideStep>
+
+        {/* STEP 4: Phone */}
+        <SlideStep show={step === 15 * 4}>
+          <div
+            className={` ${
+              step === 15 * 4
+                ? " inline translate-x-0 "
+                : " hidden -translate-x-full  "
+            } hidden transition-all w-full mt-[20px]`}>
+            {step >= 15 * 4 && (
+              <GoArrowLeft
+                onClick={handlePreviousStep}
+                className=" w-[32px] h-[32px] mb-4"
+              />
+            )}
+            <FaPhoneAlt className=" w-[32px] h-[32px]" />
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <Label className=" w-[70%] mt-[10px] font-extrabold text-[24px]">
+                    What’s your phone number?
+                  </Label>
+                  <FormControl>
+                    <div className=" mt-[15px] items-center flex gap-5">
+                      <Input
+                        required
+                        {...field}
+                        className="  text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage className=" text-accent" />
+                </FormItem>
+              )}
+            />
+          </div>
+        </SlideStep>
+
+        {/* STEP 5: Password */}
+        <SlideStep show={step === 15 * 5 && !isConfirmPasswordScreen}>
+          <div
+            className={` ${
+              step === 15 * 5 && !isConfirmPasswordScreen
+                ? " inline translate-x-0 "
+                : " hidden -translate-x-full  "
+            } hidden transition-all w-full mt-[20px]`}>
+            {step >= 15 * 5 && !isConfirmPasswordScreen && (
+              <GoArrowLeft
+                onClick={handlePreviousStep}
+                className=" w-[32px] h-[32px] mb-4"
+              />
+            )}
+            <MdOutlinePassword className=" w-[32px] h-[32px]" />
+            <FormField
+              control={form.control}
+              name="passwordObj.password"
+              render={({ field }) => (
+                <FormItem>
+                  <Label className=" mt-[10px] font-extrabold text-[24px]">
+                    Create your password
+                  </Label>
+                  <FormControl>
+                    <div className=" relative">
+                      <Input
+                        required
+                        {...field}
+                        type={password ? "password" : "text"}
+                        className=" mt-[10px] pr-[50px]  py-[20px] text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
+                      />
+                      {!password ? (
+                        <FaRegEye
+                          onClick={handleDisplayPassword}
+                          className=" absolute right-0 -translate-y-1 top-1/2  w-[24px] h-[24px]"
+                        />
+                      ) : (
+                        <LuEyeClosed
+                          onClick={handleDisplayPassword}
+                          className=" absolute right-0 -translate-y-1 top-1/2  w-[24px] h-[24px]"
+                        />
+                      )}
+                    </div>
+                  </FormControl>
+                  <div className=" text-[12px] mt-[10px]">
+                    {PASSWORDCHECK.map((check) => (
+                      <div
+                        key={check.key}
+                        className={`flex gap-2 items-center ${
+                          check.state === true ? " text-white " : " text-accent"
+                        } `}>
+                        {check.state === true ? (
+                          <IoMdCheckmark />
+                        ) : (
+                          <IoMdClose />
+                        )}
+                        <div>{check.message}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <FormMessage className=" text-accent" />
+                </FormItem>
+              )}
+            />
+          </div>
+        </SlideStep>
+
+        {/* Confirm Password sub-screen */}
+        <SlideStep show={isConfirmPasswordScreen}>
+          <div
+            className={`${
+              isConfirmPasswordScreen
+                ? " inline translate-x-0 "
+                : " hidden -translate-x-full  "
+            } hidden transition-all w-full mt-[20px]`}>
+            <GoArrowLeft
+              onClick={handlePreviousStep}
+              className=" w-[32px] h-[32px]"
+            />
+            <FormField
+              name="passwordObj.confirmPassword"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <Label className=" mt-[10px] font-extrabold text-[24px]">
+                    Confirm your password
+                  </Label>
+                  <FormControl>
+                    <div className=" relative">
+                      <Input
+                        required
+                        {...field}
+                        type={password ? "password" : "text"}
+                        className=" mt-[10px] pr-[50px]  py-[20px] text-[20px] outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 "
+                      />
+                      {!password ? (
+                        <FaRegEye
+                          onClick={handleDisplayPassword}
+                          className=" absolute right-0 -translate-y-1 top-1/2  w-[24px] h-[24px]"
+                        />
+                      ) : (
+                        <LuEyeClosed
+                          onClick={handleDisplayPassword}
+                          className=" absolute right-0 -translate-y-1 top-1/2  w-[24px] h-[24px]"
+                        />
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage className=" text-accent" />
+                </FormItem>
+              )}
+            />
+          </div>
+        </SlideStep>
+
+        {/* STEP 6: Address */}
+        <SlideStep show={step === 15 * 6}>
+          <div
+            className={` ${
+              step === 15 * 6
+                ? " inline translate-x-0 "
+                : " hidden  -translate-x-full "
+            } hidden transition-all w-full mt-[20px]`}>
+            {step >= 15 * 6 && (
+              <GoArrowLeft
+                onClick={handlePreviousStep}
+                className=" w-[32px] h-[32px] mb-4"
+              />
+            )}
+            <div className="">
+              <p className=" text-[24px] font-extrabold">
+                Personalize your profile with your address
+              </p>
+              <ScrollArea className=" h-[400px]">
+                <div className=" mt-[10px]">
+                  <FormField
+                    name="address"
+                    control={form.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <div className="relative">
+                            <MdLocationOn className="absolute top-1/2 -translate-y-1/2 w-[24px] h-[24px]" />
+                            <GoogleAddressField
+                              value={field.value ?? ""}
+                              onChange={(val) => field.onChange(val)}
+                              onSelectAddress={(structured) => {
+                                form.setValue("structuredAddress", structured);
+                              }}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage className="text-accent" />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <ScrollBar orientation="vertical" />
+              </ScrollArea>
+            </div>
+          </div>
+        </SlideStep>
+
+        {/* STEP 7: DOB + submit */}
+        <SlideStep show={step === 15 * 7}>
+          <div
+            className={` ${
+              step === 15 * 7
+                ? " inline translate-x-0 "
+                : " hidden -translate-x-full "
+            } hidden transition-all w-full mt-[20px]`}>
+            <div className=" px-[20px] py-[100px]  bg-black w-screen  flex flex-col gap-[19px] fixed left-0 top-0 z-30 h-[100svh]">
+              <GoArrowLeft
+                onClick={handlePreviousStep}
+                className=" w-[32px] h-[32px]"
+              />
+              <div className="">
+                <p className=" text-[32px] font-bold">When’s your birthday?</p>
+                <p className=" w-[70%] text-[18px]">
+                  Your birthday won’t be shown publicly.
+                </p>
+                <FormField
+                  control={form.control}
+                  name="dob"
+                  render={({ field }) => (
+                    <FormItem className="flex w-full flex-col">
+                      <Popover>
+                        <PopoverTrigger className="w-full" asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                " text-[18px] py-[20px] mt-[30px] border-l-0 px-0 border-r-0 border-t-0 w-full rounded-none text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}>
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-full p-0 bg-secondary mt-[10px] text-white border-none"
+                          align="center">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            className="w-full bg-black text-white"
+                            disabled={(date) =>
+                              date > new Date() || date < new Date("1900-01-01")
+                            }
+                            captionLayout="dropdown"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={!form.formState.isValid || loading}
+                className=" w-full rounded-[12px] font-semibold py-[24px]">
+                Finish setup
+              </Button>
+            </div>
+          </div>
+        </SlideStep>
 
         {isBuildingProfile ? (
           <div className="fixed left-0 top-0 z-30 h-[100svh]">
