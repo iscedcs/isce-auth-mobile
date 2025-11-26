@@ -20,6 +20,7 @@ export default function QuickRegisterForm() {
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
+  const [redirectURL, setRedirectURL] = useState("/sign-in");
   const sp = useSearchParams();
 
   // Save redirect during onboarding
@@ -27,8 +28,6 @@ export default function QuickRegisterForm() {
     const safe = getSafeRedirect(sp.get("redirect"));
     if (safe) sessionStorage.setItem("redirect_hint", safe);
   }, [sp]);
-
-  const [redirectURL, setRedirectURL] = useState("/sign-in");
 
   const [form, setForm] = useState({
     firstName: "",
@@ -63,10 +62,9 @@ export default function QuickRegisterForm() {
         password,
       });
 
-      setLoading(false);
-
       if (!response.success) {
         toast.error(response.message);
+        setLoading(false);
         return;
       }
       const signInResult = await signIn("credentials", {
@@ -103,7 +101,6 @@ export default function QuickRegisterForm() {
       const r = getRedirect();
       toast.success("Account created! Please sign in.");
       window.location.href = `/sign-in?redirect=${encodeURIComponent(r)}`;
-      return;
     } catch (error: any) {
       toast.error(error?.message || "Something went wrong");
     } finally {
