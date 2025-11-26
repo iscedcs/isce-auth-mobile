@@ -150,7 +150,7 @@ export default function QuickRegisterForm() {
       <div className="text-center text-sm text-white/60 mt-3">
         Already have an account?{" "}
         <Link
-          href="/sign-in"
+          href={`/sign-in?redirect=${encodeURIComponent(getRedirect())}`}
           className="text-primary hover:underline font-medium">
           Login
         </Link>
