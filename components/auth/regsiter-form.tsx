@@ -33,6 +33,11 @@ export default function QuickRegisterForm() {
     setForm({ ...form, [key]: value });
   };
 
+  const redirectURL =
+    typeof window !== "undefined"
+      ? `/sign-in?redirect=${encodeURIComponent(getRedirect())}`
+      : "/sign-in";
+
   const handleSubmit = async () => {
     const { firstName, lastName, email, phone, password } = form;
 
@@ -43,24 +48,30 @@ export default function QuickRegisterForm() {
 
     setLoading(true);
 
-    const response = await AuthService.quickRegister({
-      firstName,
-      lastName,
-      email,
-      phone,
-      password,
-    });
+    try {
+      const response = await AuthService.quickRegister({
+        firstName,
+        lastName,
+        email,
+        phone,
+        password,
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (!response.success) {
-      toast.error(response.message);
-      return;
+      if (!response.success) {
+        toast.error(response.message);
+        return;
+      }
+
+      toast.success("Account created successfully");
+
+      router.push(getRedirect() || "/dashboard");
+    } catch (error: any) {
+      toast.error(error?.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
-
-    toast.success("Account created successfully");
-
-    router.push(`/sign-in?redirect=${encodeURIComponent(getRedirect())}`);
   };
 
   return (
@@ -150,7 +161,7 @@ export default function QuickRegisterForm() {
       <div className="text-center text-sm text-white/60 mt-3">
         Already have an account?{" "}
         <Link
-          href={`/sign-in?redirect=${encodeURIComponent(getRedirect())}`}
+          href={redirectURL}
           className="text-primary hover:underline font-medium">
           Login
         </Link>
