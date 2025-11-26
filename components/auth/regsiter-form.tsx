@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AuthService } from "@/lib/auth-service";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getRedirect } from "@/lib/auth-flow";
 
 import { FaRegEye } from "react-icons/fa";
@@ -13,18 +13,22 @@ import { BiRename } from "react-icons/bi";
 import { FaPhoneAlt } from "react-icons/fa";
 import { MdOutlinePassword } from "react-icons/md";
 import Link from "next/link";
+import { getSafeRedirect } from "@/lib/safe-redirect";
+import { getSession, signIn } from "next-auth/react";
 
 export default function QuickRegisterForm() {
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
-  const [redirectURL, setRedirectURL] = useState("/sign-in");
+  const sp = useSearchParams();
 
+  // Save redirect during onboarding
   useEffect(() => {
-    // runs only in client — safe
-    const redirect = getRedirect();
-    setRedirectURL(`/sign-in?redirect=${encodeURIComponent(redirect)}`);
-  }, []);
+    const safe = getSafeRedirect(sp.get("redirect"));
+    if (safe) sessionStorage.setItem("redirect_hint", safe);
+  }, [sp]);
+
+  const [redirectURL, setRedirectURL] = useState("/sign-in");
 
   const [form, setForm] = useState({
     firstName: "",
@@ -65,10 +69,41 @@ export default function QuickRegisterForm() {
         toast.error(response.message);
         return;
       }
+      const signInResult = await signIn("credentials", {
+        email: email,
+        password: password,
+        redirect: false,
+      });
 
-      toast.success("Account created successfully");
+      if (signInResult?.ok) {
+        const session = await getSession();
+        const token = (session as any)?.user?.accessToken;
 
-      router.push(getRedirect() || "/dashboard");
+        const safe = getSafeRedirect(getRedirect());
+
+        setTimeout(() => {
+          if (safe && token) {
+            const target = new URL(safe);
+            const callback = new URL("/auth/callback", target.origin);
+            callback.searchParams.set("token", token);
+
+            const finalPath = target.pathname + target.search + target.hash;
+            callback.searchParams.set("redirect", finalPath);
+
+            window.location.href = callback.toString();
+            return;
+          }
+
+          window.location.href = "/";
+        }, 1500);
+
+        return;
+      }
+
+      const r = getRedirect();
+      toast.success("Account created! Please sign in.");
+      window.location.href = `/sign-in?redirect=${encodeURIComponent(r)}`;
+      return;
     } catch (error: any) {
       toast.error(error?.message || "Something went wrong");
     } finally {
@@ -86,7 +121,7 @@ export default function QuickRegisterForm() {
         <input
           type="text"
           placeholder="Enter your preferred firstname"
-          className="w-full pl-10 p-3 bg-black placeholder:text-gray-50/25 border-b border-gray-700 outline-none"
+          className="w-full pl-10 p-3 bg-black placeholder:text-gray-50/15 border-b border-gray-700 outline-none"
           value={form.firstName}
           onChange={(e) => handleChange("firstName", e.target.value)}
         />
@@ -98,7 +133,7 @@ export default function QuickRegisterForm() {
         <input
           type="text"
           placeholder="Enter your popular lastname"
-          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/25 border-gray-700 outline-none"
+          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/15 border-gray-700 outline-none"
           value={form.lastName}
           onChange={(e) => handleChange("lastName", e.target.value)}
         />
@@ -110,7 +145,7 @@ export default function QuickRegisterForm() {
         <input
           type="email"
           placeholder="Email Address"
-          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/25 border-gray-700 outline-none"
+          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/15 border-gray-700 outline-none"
           value={form.email}
           onChange={(e) => handleChange("email", e.target.value)}
         />
@@ -122,7 +157,7 @@ export default function QuickRegisterForm() {
         <input
           type="tel"
           placeholder="Phone Number"
-          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/25 border-gray-700 outline-none"
+          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/15 border-gray-700 outline-none"
           value={form.phone}
           onChange={(e) => handleChange("phone", e.target.value)}
         />
@@ -134,7 +169,7 @@ export default function QuickRegisterForm() {
         <input
           type={showPassword ? "text" : "password"}
           placeholder="Password"
-          className="w-full pl-10 pr-10 p-3 bg-black border-b placeholder:text-gray-50/25 border-gray-700 outline-none"
+          className="w-full pl-10 pr-10 p-3 bg-black border-b placeholder:text-gray-50/15 border-gray-700 outline-none"
           value={form.password}
           onChange={(e) => handleChange("password", e.target.value)}
         />
