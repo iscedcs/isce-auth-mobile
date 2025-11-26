@@ -5,6 +5,7 @@ export const URLS = {
   auth: {
     sign_up: "/auth/signup",
     sign_in: "/auth/signin",
+    quick_register: "/auth/signupUser",
     sign_out: "/auth/signout",
     reset_token: "/auth/send-reset-token",
     reset_password: "/auth/reset-password",

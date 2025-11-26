@@ -77,6 +77,36 @@ interface CompleteSignupData {
 export class AuthService {
   private static baseUrl = AUTH_API;
 
+  static async quickRegister(payload: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    password: string;
+  }) {
+    const url = `${this.baseUrl}${URLS.auth.quick_register}`;
+
+    try {
+      const response = await axios.post(url, payload, {
+        timeout: 15000,
+        headers: { "Content-Type": "application/json" },
+      });
+
+      return {
+        success: true,
+        message: response.data.message || "Account created successfully",
+        data: response.data.data || response.data.user,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          "Unable to complete quick registration",
+      };
+    }
+  }
+
   // Step 1: Create account (after user details form)
   static async completeSignup(
     userDetails: UserDetailsFormData,
@@ -448,4 +478,5 @@ export const {
   resetPasswordWithCode,
   validateResetCode,
   getUserProfile,
+  quickRegister,
 } = AuthService;
