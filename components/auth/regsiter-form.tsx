@@ -12,6 +12,7 @@ import { MdEmail } from "react-icons/md";
 import { BiRename } from "react-icons/bi";
 import { FaPhoneAlt } from "react-icons/fa";
 import { MdOutlinePassword } from "react-icons/md";
+import Link from "next/link";
 
 export default function QuickRegisterForm() {
   const router = useRouter();
@@ -146,6 +147,14 @@ export default function QuickRegisterForm() {
         className="mt-auto p-4 bg-white text-black rounded-lg font-semibold disabled:opacity-40">
         {loading ? "Creating account..." : "Register"}
       </button>
+      <div className="text-center text-sm text-white/60 mt-3">
+        Already have an account?{" "}
+        <Link
+          href="/sign-in"
+          className="text-primary hover:underline font-medium">
+          Login
+        </Link>
+      </div>
     </div>
   );
 }
