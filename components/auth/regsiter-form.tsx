@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthService } from "@/lib/auth-service";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,13 @@ export default function QuickRegisterForm() {
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
+  const [redirectURL, setRedirectURL] = useState("/sign-in");
+
+  useEffect(() => {
+    // runs only in client — safe
+    const redirect = getRedirect();
+    setRedirectURL(`/sign-in?redirect=${encodeURIComponent(redirect)}`);
+  }, []);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -32,11 +39,6 @@ export default function QuickRegisterForm() {
   const handleChange = (key: string, value: string) => {
     setForm({ ...form, [key]: value });
   };
-
-  const redirectURL =
-    typeof window !== "undefined"
-      ? `/sign-in?redirect=${encodeURIComponent(getRedirect())}`
-      : "/sign-in";
 
   const handleSubmit = async () => {
     const { firstName, lastName, email, phone, password } = form;
@@ -84,7 +86,7 @@ export default function QuickRegisterForm() {
         <input
           type="text"
           placeholder="Enter your preferred firstname"
-          className="w-full pl-10 p-3 bg-black placeholder:text-gray-50/15 border-b border-gray-700 outline-none"
+          className="w-full pl-10 p-3 bg-black placeholder:text-gray-50/25 border-b border-gray-700 outline-none"
           value={form.firstName}
           onChange={(e) => handleChange("firstName", e.target.value)}
         />
@@ -96,7 +98,7 @@ export default function QuickRegisterForm() {
         <input
           type="text"
           placeholder="Enter your popular lastname"
-          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/15 border-gray-700 outline-none"
+          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/25 border-gray-700 outline-none"
           value={form.lastName}
           onChange={(e) => handleChange("lastName", e.target.value)}
         />
@@ -108,7 +110,7 @@ export default function QuickRegisterForm() {
         <input
           type="email"
           placeholder="Email Address"
-          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/15 border-gray-700 outline-none"
+          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/25 border-gray-700 outline-none"
           value={form.email}
           onChange={(e) => handleChange("email", e.target.value)}
         />
@@ -120,7 +122,7 @@ export default function QuickRegisterForm() {
         <input
           type="tel"
           placeholder="Phone Number"
-          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/15 border-gray-700 outline-none"
+          className="w-full pl-10 p-3 bg-black border-b placeholder:text-gray-50/25 border-gray-700 outline-none"
           value={form.phone}
           onChange={(e) => handleChange("phone", e.target.value)}
         />
@@ -132,7 +134,7 @@ export default function QuickRegisterForm() {
         <input
           type={showPassword ? "text" : "password"}
           placeholder="Password"
-          className="w-full pl-10 pr-10 p-3 bg-black border-b placeholder:text-gray-50/15 border-gray-700 outline-none"
+          className="w-full pl-10 pr-10 p-3 bg-black border-b placeholder:text-gray-50/25 border-gray-700 outline-none"
           value={form.password}
           onChange={(e) => handleChange("password", e.target.value)}
         />
