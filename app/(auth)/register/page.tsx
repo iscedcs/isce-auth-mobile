@@ -1,5 +1,10 @@
 import QuickRegisterForm from "@/components/auth/regsiter-form";
+import { Suspense } from "react";
 
 export default function QuickRegisterPage() {
-  return <QuickRegisterForm />;
+  return (
+    <Suspense fallback={<></>}>
+      <QuickRegisterForm />
+    </Suspense>
+  );
 }
