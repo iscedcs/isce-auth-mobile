@@ -1,40 +1,57 @@
 "use client";
 
+import { getRedirect } from "@/lib/auth-flow";
+import { PRODUCTS } from "@/lib/products";
+import { getSafeRedirect } from "@/lib/safe-redirect";
+import { motion } from "framer-motion";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { PRODUCTS } from "@/lib/products";
-import { getRedirect } from "@/lib/auth-flow";
-import { getSafeRedirect } from "@/lib/safe-redirect";
+
 import {
-  Calendar,
-  ShoppingBag,
-  Contact,
   Briefcase,
-  Wallet,
   LogOut,
-  User,
+  ShoppingBag,
+  TicketIcon,
+  Wallet,
 } from "lucide-react";
+import Image from "next/image";
+import { MdBackupTable } from "react-icons/md";
+import DashboardSkeleton from "@/shared/skeleton/DashboardSkeleton";
 
 const ICON_MAP: any = {
-  contact: Contact,
+  contact: MdBackupTable,
   briefcase: Briefcase,
-  calendar: Calendar,
+  calendar: TicketIcon,
   "shopping-bag": ShoppingBag,
   wallet: Wallet,
 };
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession({
+    required: true,
+  });
+
   const router = useRouter();
 
-  const user = session?.user;
-  const accessToken = (session as any)?.user?.accessToken;
+  if (status === "loading") {
+    return <DashboardSkeleton />;
+  }
+
+  if (!session) {
+    router.push("/sign-in");
+    return null;
+  }
+  const { user } = session;
+  const accessToken = user.accessToken;
 
   const handleLaunch = (product: any) => {
     if (!product.active) return;
 
-    if (!accessToken) return alert("Missing token");
+    if (!accessToken) {
+      alert("Missing access token. Please login again.");
+      router.push("/snig-in");
+      return;
+    }
 
     const safe = getSafeRedirect(getRedirect());
     const target = new URL(product.url);
@@ -51,9 +68,14 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <User className="w-10 h-10 text-white/70" />
+          <Image
+            width={50}
+            height={50}
+            src={user.image!}
+            alt="Isce Authenticated User"
+          />
           <div>
-            <p className="font-semibold text-lg">
+            <p className="font-semibold text-background text-lg">
               {user?.firstName} {user?.lastName}
             </p>
             <p className="text-sm text-white/50">{user?.email}</p>
@@ -68,8 +90,13 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      <h1 className="text-3xl font-bold mb-3">ISCE Products</h1>
-      <p className="text-white/50 mb-8">Select a product to continue</p>
+      <h1 className="text-3xl font-bold mb-3">Welcome back 👋</h1>
+      <p className="text-white/60 mb-2">
+        You are currently signed in on ISCE Auth.
+      </p>
+      <p className="text-white/40 mb-8">
+        Select a product below to continue using your ISCE account.
+      </p>
 
       {/* Product Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -98,7 +125,7 @@ export default function DashboardPage() {
               <p className="font-semibold text-lg">{item.name}</p>
               <p className="text-white/40 text-sm mt-1">
                 {item.active
-                  ? "Continue on"
+                  ? "Open product"
                   : "Coming soon — not yet available"}
               </p>
             </motion.div>
@@ -106,7 +133,6 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Footer - Profile */}
       <div className="mt-auto pt-10 text-center text-white/40 text-sm">
         ISCE Digital Concept © {new Date().getFullYear()}
       </div>

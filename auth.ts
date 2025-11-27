@@ -7,26 +7,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     error: "/auth/error",
   },
   callbacks: {
-    async jwt({ token, user, account }) {
-      console.log(
-        "JWT Callback - Token:",
-        token,
-        "User:",
-        user,
-        "Account:",
-        account
-      );
-
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.picture = user.image;
         token.email = user.email;
         token.firstName = user.firstName;
         token.lastName = user.lastName;
+        token.phone = user.phone;
         token.userType = user.userType;
+        token.picture = user.image;
+        token.accessToken = user.accessToken;
         token.accessToken = user.accessToken;
       }
 
+      console.log("JWT Callback - Token:", token, "User:", user);
       return token;
     },
 
@@ -76,7 +70,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return `${baseUrl}/sign-in`;
     },
 
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user, account }) {
       console.log("SignIn Callback - User:", user, "Account:", account);
 
       // Allow sign in
