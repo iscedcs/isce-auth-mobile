@@ -1,12 +1,17 @@
 "use client";
 import { useEffect } from "react";
 import { getSafeRedirect } from "@/lib/safe-redirect";
+import { useSession } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function AuthLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
   useEffect(() => {
     try {
       const sp = new URLSearchParams(window.location.search);
@@ -22,6 +27,15 @@ export default function AuthLayout({
       console.log("Redirect capture skipped");
     }
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+
+    const restricted = ["/sign-in", "/sign-up", "/register"];
+    if (restricted.includes(pathname)) {
+      router.replace("/dashboard");
+    }
+  }, [session, pathname]);
 
   return <>{children}</>;
 }
