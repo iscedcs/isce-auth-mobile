@@ -14,7 +14,7 @@ export default {
       async authorize(credentials) {
         const validatedFields = signInFormSchema.safeParse(credentials);
         if (!validatedFields.success) {
-          console.error("Validation failed:", validatedFields.error);
+          console.error("Auth validation failed:", validatedFields.error);
           return null;
         }
         const { email, password } = validatedFields.data;
@@ -32,33 +32,63 @@ export default {
             }
           );
 
-          const data = res.data;
-          //console.log(data);
-          const userData = data.data.data || data.data.user || data.data;
-          const accessToken =
-            userData?.accessToken || data.data.accessToken || userData?.token;
-          if (userData && (userData.id || userData._id) && userData.email) {
-            const user = {
-              id: userData.id || userData._id,
-              email: userData.email,
-              firstName:
-                userData.firstName || userData.firstname || userData.first_name,
-              lastName:
-                userData.lastName || userData.lastname || userData.last_name,
-              userType:
-                userData.userType ||
-                userData.accountType ||
-                userData.user_type ||
-                "USER",
-              accessToken: accessToken || null,
-              image: userData.displayPicture || userData.avatar || null,
-            };
+          const payload = res.data?.data;
+          if (!payload) return null;
 
-            console.log("Returning user object:", user);
-            return user;
+          const accessToken =
+            payload.accessToken ||
+            payload.token ||
+            payload.data?.accessToken ||
+            null;
+
+          const fullName = payload.username || "";
+          const [firstName, ...rest] = fullName.trim().split(" ");
+          const lastName = rest.join(" ").trim();
+
+          const user = {
+            id: payload.id,
+            email: payload.email,
+            firstName: firstName || payload.firstName || "",
+            lastName: lastName || payload.lastName || "",
+            image: payload.displayPicture || null,
+            userType: payload.userType || "USER",
+            accessToken,
+          };
+
+          if (!user.id || !user.email) {
+            console.error("Invalid user object built:", user);
+            return null;
           }
-          console.error("Invalid user data structure:", userData);
-          return null;
+
+          console.log("Authorize → returning user:", user);
+
+          // const data = res.data;
+          // //console.log(data);
+          // const userData = data.data.data || data.data.user || data.data;
+          // const accessToken =
+          //   userData?.accessToken || data.data.accessToken || userData?.token;
+          // if (userData && (userData.id || userData._id) && userData.email) {
+          //   const user = {
+          //     id: userData.id || userData._id,
+          //     email: userData.email,
+          //     firstName:
+          //       userData.firstName || userData.firstname || userData.first_name,
+          //     lastName:
+          //       userData.lastName || userData.lastname || userData.last_name,
+          //     userType:
+          //       userData.userType ||
+          //       userData.accountType ||
+          //       userData.user_type ||
+          //       "USER",
+          //     accessToken: accessToken || null,
+          //     image: userData.displayPicture || userData.avatar || null,
+          //   };
+
+          //   console.log("Returning user object:", user);
+          //   return user;
+          // }
+          // console.error("Invalid user data structure:", user);
+          return user;
         } catch (error: any) {
           console.error("Sign-in error details:", {
             message: error.message,
