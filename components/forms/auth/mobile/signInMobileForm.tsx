@@ -11,10 +11,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AuthService } from "@/lib/auth-service";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 import { signInFormSchema } from "@/schemas/mobile/sign-in";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { getSession, signIn, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -47,6 +47,7 @@ export default function MobileSignInForm({
   });
 
   const router = useRouter();
+  const sp = useSearchParams();
 
   const emailWatch = form.watch("email");
 
@@ -68,8 +69,13 @@ export default function MobileSignInForm({
     }
   }, [emailWatch]);
 
-  const sp = useSearchParams();
-  const prompt = sp.get("prompt") === "login" ? "&prompt=login" : "";
+  // const prompt = sp.get("prompt") === "login" ? "&prompt=login" : "";
+
+  useEffect(() => {
+    if (sp.get("prompt") === "login") {
+      localStorage.removeItem("isce_auth_token");
+    }
+  }, [sp]);
 
   const forgotPasswordHref = callbackUrl
     ? `/forgot-password?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
@@ -87,18 +93,6 @@ export default function MobileSignInForm({
     router.push(signUpHref);
   };
 
-  useEffect(() => {
-    async function maybeForceReauth() {
-      if (sp.get("prompt") === "login") {
-        const session = await getSession();
-        if (session) {
-          await signOut({ redirect: false });
-        }
-      }
-    }
-    maybeForceReauth();
-  }, [sp]);
-
   const handleDisplayPassword = () => {
     setPassword((password) => !password);
   };
@@ -110,47 +104,41 @@ export default function MobileSignInForm({
   const handleSubmit = async (data: signInValues) => {
     try {
       setIsLoading(true);
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
+      const result = await AuthService.signIn(data.email, data.password);
 
-      if (result?.error || !result?.ok) {
-        toast.error("Invalid email or password");
+      if (result?.success || !result?.data) {
+        toast.error(result.message || "Invalid email or password");
         setIsLoading(false);
         return;
       }
 
-      const session = await getSession();
-      const token = (session as any)?.user?.accessToken;
-      const safe = getSafeRedirect(callbackUrl) || getRedirect();
+      const { accessToken, firstName } = result.data;
 
-      if (token && safe) {
-        try {
-          const target = new URL(safe);
-          const callback = new URL("/auth/callback", target.origin);
-          callback.searchParams.set("token", token);
-
-          const finalPath = target.pathname + target.search + target.hash;
-          callback.searchParams.set("redirect", finalPath);
-
-          toast.success("Welcome back!");
-          window.location.href = callback.toString();
-          return;
-        } catch (e) {
-          // If safe was relative ("/wallet"), make it absolute to your default product origin if you prefer:
-          // const origin = process.env.NEXT_PUBLIC_PRODUCT_A_ORIGIN!;
-          // const target = new URL(safe, origin);
-          // ... (same as above)
-        }
+      if (!accessToken) {
+        toast.error("Authentication failed: missing token");
+        setIsLoading(false);
+        return;
       }
 
-      toast.success("Signed In Successfully!");
+      localStorage.setItem("isce_auth_token", accessToken);
+      toast.success(`Welcome back${firstName ? ", " + firstName : ""}!`);
+      const safe = getSafeRedirect(callbackUrl) || getRedirect();
 
+      if (safe && accessToken) {
+        const target = new URL(safe);
+        const callback = new URL("/auth/callback", target.origin);
+        callback.searchParams.set("token", accessToken);
+
+        const finalPath = target.pathname + target.search + target.hash;
+        callback.searchParams.set("redirect", finalPath);
+
+        toast.success("Welcome back!");
+        window.location.href = callback.toString();
+        return;
+      }
       router.push("/dashboard");
     } catch (e) {
-      console.error("Sign in error", e);
+      console.error("Mobile sign-in error:", e);
       toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);

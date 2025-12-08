@@ -1,101 +1,97 @@
 "use client";
 
-import { getRedirect } from "@/lib/auth-flow";
-import { PRODUCTS } from "@/lib/products";
-import { getSafeRedirect } from "@/lib/safe-redirect";
-import { motion } from "framer-motion";
-import { signOut, useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { motion } from "framer-motion";
+import { decodeJwt, isTokenExpired, DecodedToken } from "@/lib/jwt";
+import { PRODUCTS } from "@/lib/products";
 import {
-  Briefcase,
-  LogOut,
+  Calendar,
   ShoppingBag,
-  TicketIcon,
+  Contact,
+  Briefcase,
   Wallet,
+  LogOut,
+  User,
 } from "lucide-react";
-import Image from "next/image";
-import { MdBackupTable } from "react-icons/md";
-import DashboardSkeleton from "@/shared/skeleton/DashboardSkeleton";
+import { getRedirect } from "@/lib/auth-flow";
+import { getSafeRedirect } from "@/lib/safe-redirect";
 
 const ICON_MAP: any = {
-  contact: MdBackupTable,
+  contact: Contact,
   briefcase: Briefcase,
-  calendar: TicketIcon,
+  calendar: Calendar,
   "shopping-bag": ShoppingBag,
   wallet: Wallet,
 };
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession({
-    required: true,
-  });
-
   const router = useRouter();
+  const [token, setToken] = useState<string | null>(null);
+  const [decoded, setDecoded] = useState<DecodedToken | null>(null);
 
-  if (status === "loading") {
-    return <DashboardSkeleton />;
-  }
-
-  if (!session) {
-    router.push("/sign-in");
-    return null;
-  }
-  const { user } = session;
-  const accessToken = user.accessToken;
-
-  const handleLaunch = (product: any) => {
-    if (!product.active) return;
-
-    if (!accessToken) {
-      alert("Missing access token. Please login again.");
-      router.push("/snig-in");
+  useEffect(() => {
+    const stored = localStorage.getItem("isce_auth_token") || null;
+    if (!stored || isTokenExpired(stored)) {
+      // No token → force login
+      router.replace("/sign-in");
       return;
     }
+    setToken(stored);
+    setDecoded(decodeJwt(stored));
+  }, [router]);
 
-    const safe = getSafeRedirect(getRedirect());
+  const handleLaunch = (product: any) => {
+    if (!product.active || !token) return;
+
+    const safe = getSafeRedirect(getRedirect()) || "/";
+
     const target = new URL(product.url);
-
     const callback = new URL("/auth/callback", target.origin);
-    callback.searchParams.set("token", accessToken);
-    callback.searchParams.set("redirect", safe || "/");
+    callback.searchParams.set("token", token);
+    callback.searchParams.set("redirect", safe);
 
     window.location.href = callback.toString();
   };
+
+  const handleLogout = () => {
+    localStorage.removeItem("isce_auth_token");
+    router.replace("/sign-in?prompt=login");
+  };
+
+  const fullName =
+    decoded?.firstName || decoded?.lastName
+      ? `${decoded?.firstName ?? ""} ${decoded?.lastName ?? ""}`.trim()
+      : (decoded as any)?.username || decoded?.email || "ISCE User";
 
   return (
     <div className="min-h-screen bg-black text-white p-6 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Image
-            width={50}
-            height={50}
-            src={user.image!}
-            alt="Isce Authenticated User"
-          />
+          <User className="w-10 h-10 text-white/70" />
           <div>
-            <p className="font-semibold text-background text-lg">
-              {user?.firstName} {user?.lastName}
-            </p>
-            <p className="text-sm text-white/50">{user?.email}</p>
+            <p className="font-semibold text-lg">{fullName}</p>
+            <p className="text-sm text-white/50">{decoded?.email}</p>
           </div>
         </div>
 
         <button
-          onClick={() => signOut({ callbackUrl: "/" })}
+          onClick={handleLogout}
           className="flex items-center gap-2 border px-3 py-2 rounded-lg border-white/20 hover:bg-white/10 transition">
           <LogOut className="w-4 h-4" />
           Logout
         </button>
       </div>
 
-      <h1 className="text-3xl font-bold mb-3">Welcome back 👋</h1>
+      <h1 className="text-3xl font-bold mb-2">ISCE Products</h1>
       <p className="text-white/60 mb-2">
-        You are currently signed in on ISCE Auth.
+        You’re signed in to your ISCE account. Choose where you want to
+        continue.
       </p>
-      <p className="text-white/40 mb-8">
-        Select a product below to continue using your ISCE account.
+      <p className="text-xs text-white/40 mb-8">
+        Clicking a product will open it and pass your secure access token so you
+        don’t have to log in again.
       </p>
 
       {/* Product Grid */}
@@ -121,7 +117,6 @@ export default function DashboardPage() {
                   item.active ? "text-white" : "text-white/40"
                 }`}
               />
-
               <p className="font-semibold text-lg">{item.name}</p>
               <p className="text-white/40 text-sm mt-1">
                 {item.active
@@ -133,6 +128,7 @@ export default function DashboardPage() {
         })}
       </div>
 
+      {/* Footer */}
       <div className="mt-auto pt-10 text-center text-white/40 text-sm">
         ISCE Digital Concept © {new Date().getFullYear()}
       </div>

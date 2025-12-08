@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { toast } from "sonner";
-import { getSession, signIn, signOut } from "next-auth/react";
-import { DesktopSignInForm } from "./forms/auth/desktop/signInDesktopform";
-import CountryFlag from "./shared/country-flag";
-import { SignInFormData } from "@/schemas/desktop";
+import { AuthService } from "@/lib/auth-service";
 import { getSafeRedirect } from "@/lib/safe-redirect";
+import { SignInFormData } from "@/schemas/desktop";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { DesktopSignInForm } from "./forms/auth/desktop/signInDesktopform";
 import { PasswordResetModal } from "./forms/auth/password-reset-modal";
+import CountryFlag from "./shared/country-flag";
 
 type Props = { callbackUrl: string | null };
 
@@ -43,69 +43,55 @@ export default function SignInClient({ callbackUrl }: Props) {
     ? `/sign-up?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
     : `/sign-up${prompt}`;
 
-  useEffect(() => {
-    async function maybeForceReauth() {
-      if (singleProduct.get("prompt") === "login") {
-        const session = await getSession();
-        if (session) {
-          await signOut({ redirect: false });
-        }
-      }
-    }
-    maybeForceReauth();
-  }, [singleProduct]);
-
   const handleSignIn = async (data: SignInFormData) => {
     setIsLoading(true);
     try {
-      console.log("Attempting sign in with:", { email: data.email });
+      console.log("Attempting sign in with:", data.email);
 
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
+      const result = await AuthService.signIn(data.email, data.password);
 
       console.log("Sign in result:", result);
 
-      if (result?.error) {
-        toast.error("Invalid email or password. Please try again.");
-        return;
-      }
-      if (!result?.ok) {
-        toast.error("Sign in failed. Please try again.");
+      if (!result.success) {
+        toast.error(result.message || "Invalid email or password");
         return;
       }
 
-      if (result?.ok) {
-        const session = await getSession();
-        console.log("Session after sign in:", session);
-
-        toast.success("Welcome back!");
-
-        const safe = getSafeRedirect(callbackUrl);
-        const token = (session as any)?.user?.accessToken;
-
-        if (safe && token) {
-          const target = new URL(safe);
-          const callback = new URL("/auth/callback", target.origin);
-          callback.searchParams.set("token", token);
-
-          const finalPath = target.pathname + target.search + target.hash;
-          callback.searchParams.set("redirect", finalPath);
-
-          window.location.href = callback.toString();
-          return;
-        }
-        if ((session as any)?.user?.userType === "business") {
-          router.push("/business-dashboard");
-        } else {
-          router.push("/dashboard");
-        }
+      if (!result.data) {
+        toast.error("Authentication failed: missing user data");
+        return;
       }
+
+      const { accessToken, firstName, lastName, userType } = result.data;
+      console.log("Access token received in SignIn component:", accessToken);
+
+      if (!accessToken) {
+        toast.error("Authentication failed: missing token");
+        return;
+      }
+
+      localStorage.setItem("isce_auth_token", accessToken);
+
+      toast.success(`Welcome back, ${firstName}!`);
+
+      const safe = getSafeRedirect(callbackUrl);
+
+      if (safe && accessToken) {
+        const target = new URL(safe);
+        const callback = new URL("/auth/callback", target.origin);
+
+        callback.searchParams.set("token", accessToken);
+
+        const finalPath = target.pathname + target.search + target.hash;
+        callback.searchParams.set("redirect", finalPath);
+
+        window.location.href = callback.toString();
+        return;
+      }
+      router.push("/dashboard");
     } catch (error) {
       console.error("Sign in error:", error);
-      toast.error("An unexpected error occurred. Please try again.");
+      toast.error("Unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }

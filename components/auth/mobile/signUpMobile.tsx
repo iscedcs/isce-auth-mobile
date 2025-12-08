@@ -8,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 import { userType } from "@/lib/types/auth";
-import { getSession, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -45,18 +44,22 @@ export default function SignUpMobile({
     const fromStorage = sessionStorage.getItem("redirect_hint");
     return getSafeRedirect(fromStorage) || "/";
   };
+  // useEffect(() => {
+  //   function maybeForceReauth() {
+  //     if (singleProduct.get("prompt") === "login") {
+  //       // Clear JWT token
+  //       localStorage.removeItem("isce_auth_token");
 
-  useEffect(() => {
-    async function maybeForceReauth() {
-      if (singleProduct.get("prompt") === "login") {
-        const session = await getSession();
-        if (session) {
-          await signOut({ redirect: false });
-        }
-      }
-    }
-    maybeForceReauth();
-  }, [singleProduct]);
+  //       // Clear redirect hints used for SSO
+  //       sessionStorage.removeItem("redirect_hint");
+
+  //       // Optionally clear custom cookies you may have set
+  //       document.cookie = "accessToken=; Max-Age=0; path=/;";
+  //     }
+  //   }
+
+  //   maybeForceReauth();
+  // }, [singleProduct]);
 
   const handleBusiness = () => {
     setBusiness(true);
