@@ -17,14 +17,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { SlideStep } from "@/components/ui/slide-step";
+import { AuthService } from "@/lib/auth-service";
 import { PASSWORDCHECK } from "@/lib/const";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 import { userType } from "@/lib/types/auth";
@@ -33,7 +27,6 @@ import { otpSchema, signUpForIndividualSchema } from "@/schemas/mobile/sign-up";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns/format";
 import { CalendarIcon } from "lucide-react";
-import { getSession, signIn } from "next-auth/react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -525,16 +518,13 @@ export default function IndividualSignUpForm({
         setIsLoading(false);
 
         // Attempt automatic sign in
-        const signInResult = await signIn("credentials", {
-          email: payload.email,
-          password: payload.password,
-          redirect: false,
-        });
+        const login = await AuthService.signIn(payload.email, payload.password);
 
-        if (signInResult?.ok) {
-          const session = await getSession();
-          const token = (session as any)?.user?.accessToken;
+        if (login.success && login.data?.accessToken) {
+          const token = login.data.accessToken;
+          localStorage.setItem("isce_auth_token", token);
 
+          toast.success("You're In!");
           const safe = getSafeRedirect(getRedirect());
           setIsBuidlingProfile(true);
 
@@ -551,7 +541,7 @@ export default function IndividualSignUpForm({
               return;
             }
 
-            window.location.href = "/";
+            window.location.href = "/dashboard";
           }, 1500);
 
           return;

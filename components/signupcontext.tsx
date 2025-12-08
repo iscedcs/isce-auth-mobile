@@ -1,8 +1,6 @@
 "use client";
-
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-
 import { AuthService } from "@/lib/auth-service";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 import {
@@ -11,7 +9,6 @@ import {
   UserDetailsFormData,
   UserTypeFormData,
 } from "@/schemas/desktop";
-import { getSession, signIn, signOut } from "next-auth/react";
 import { toast } from "sonner";
 import { AuthLayout } from "./forms/auth/auth-layout";
 import { AccountTypeForm } from "./forms/auth/desktop/account-type-form";
@@ -48,17 +45,19 @@ export default function SignUpClient({ callbackUrl }: Props) {
     return getSafeRedirect(fromStorage) || "/";
   }
 
-  useEffect(() => {
-    async function maybeForceReauth() {
-      if (singleProduct.get("prompt") === "login") {
-        const session = await getSession();
-        if (session) {
-          await signOut({ redirect: false });
-        }
-      }
-    }
-    maybeForceReauth();
-  }, [singleProduct]);
+  // useEffect(() => {
+  //   function maybeForceReauth() {
+  //     if (singleProduct.get("prompt") === "login") {
+  //       localStorage.removeItem("isce_auth_token");
+
+  //       sessionStorage.removeItem("redirect_hint");
+
+  //       document.cookie = "accessToken=; Max-Age=0; path=/;";
+  //     }
+  //   }
+
+  //   maybeForceReauth();
+  // }, [singleProduct]);
 
   const cardImages = [
     "/images/BROWN.png",
@@ -162,36 +161,37 @@ export default function SignUpClient({ callbackUrl }: Props) {
         setSignupData((prev) => ({ ...prev, passwordCreation: data }));
         toast.success("Account created successfully!");
 
-        const signInResult = await signIn("credentials", {
-          email: signupData.userDetails.email,
-          password: data.password,
-          redirect: false,
-        });
-
-        if (signInResult?.ok) {
-          const session = await getSession();
-          toast.success("Welcome! Redirecting to destination...");
-
-          const token = (session as any)?.user?.accessToken;
-          if (safe && token) {
-            const target = new URL(safe);
-            const callback = new URL("/auth/callback", target.origin);
-            callback.searchParams.set("token", token);
-
-            const finalPath = target.pathname + target.search + target.hash;
-            callback.searchParams.set("redirect", finalPath);
-
-            window.location.href = callback.toString();
-            return;
-          }
-          router.push("/");
-        } else {
-          toast.success("Account created! Please sign in.");
+        const login = await AuthService.signIn(
+          signupData.userDetails.email,
+          data.password
+        );
+        if (!login.success || !login.data?.accessToken) {
+          toast.error(
+            "Account created, but login failed. Please sign in manually."
+          );
           const redirect = safe || getRedirect();
           router.push(`/sign-in?redirect=${encodeURIComponent(redirect)}`);
+          setIsLoading(false);
+          return;
         }
-      } else {
-        toast.error(response.message);
+
+        const accessToken = login.data.accessToken;
+        localStorage.setItem("isce_auth_token", accessToken);
+
+        toast.success("Welcome! Redirecting...");
+
+        if (safe && accessToken) {
+          const target = new URL(safe);
+          const callback = new URL("/auth/callback", target.origin);
+          callback.searchParams.set("token", accessToken);
+
+          const finalPath = target.pathname + target.search + target.hash;
+          callback.searchParams.set("redirect", finalPath);
+
+          window.location.href = callback.toString();
+          return;
+        }
+        router.push("/dashboard");
       }
     } catch (error) {
       console.error("Complete signup error:", error);

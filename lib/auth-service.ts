@@ -75,6 +75,69 @@ interface CompleteSignupData {
 }
 
 export class AuthService {
+  /** ---------------------------------------------------------
+   * SIGN IN (CORE FOR SSO)
+  ---------------------------------------------------------*/
+  static async signIn(email: string, password: string) {
+    const url = `${this.baseUrl}${URLS.auth.sign_in}`;
+
+    try {
+      const response = await axios.post(
+        url,
+        { email, password },
+        {
+          timeout: 15000,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      const payload = response.data?.data;
+      if (!payload) throw new Error("Malformed response: missing data");
+
+      // Extract token
+      const accessToken =
+        payload.accessToken ||
+        payload.token ||
+        payload?.data?.accessToken ||
+        null;
+
+      if (!accessToken) throw new Error("Missing access token from backend");
+
+      console.log("Generated access token on Auth:", accessToken);
+
+      // Extract name logic
+      let firstName = payload.firstName || "";
+      let lastName = payload.lastName || "";
+
+      if ((!firstName || !lastName) && payload.username) {
+        const parts = payload.username.trim().split(" ");
+        firstName = firstName || parts[0] || "";
+        lastName = lastName || parts.slice(1).join(" ") || "";
+      }
+
+      return {
+        success: true,
+        data: {
+          accessToken,
+          id: payload.id,
+          email: payload.email,
+          firstName,
+          lastName,
+          displayPicture: payload.displayPicture || null,
+          userType: payload.userType || "USER",
+          permissions: payload.permissions || null,
+        },
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message:
+          error?.response?.data?.message ||
+          error.message ||
+          "Unable to sign in",
+      };
+    }
+  }
   private static baseUrl = AUTH_API;
 
   static async quickRegister(payload: {
@@ -107,7 +170,9 @@ export class AuthService {
     }
   }
 
-  // Step 1: Create account (after user details form)
+  /**
+   * Step 1: Create account (after user details form)
+   */
   static async completeSignup(
     userDetails: UserDetailsFormData,
     passwordData: PasswordCreationFormData
@@ -164,7 +229,9 @@ export class AuthService {
     }
   }
 
-  // Step 2: Request OTP for email verification
+  /**
+   *  Step 2: Request OTP for email verification
+   */
   static async requestOtp(email: string): Promise<OtpResponse> {
     const url = `${this.baseUrl}${URLS.auth.request_verification_code}`;
 

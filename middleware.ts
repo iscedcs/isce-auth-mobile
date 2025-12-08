@@ -1,49 +1,40 @@
-import NextAuth from "next-auth";
-import { getToken } from "next-auth/jwt";
-import { NextResponse } from "next/server";
-import authConfig from "./auth.config";
-import { apiAuthPrefix, authRoutes, publicRoutes } from "./routes";
+import { NextResponse, NextRequest } from "next/server";
+import { publicRoutes, authRoutes } from "./routes";
 
-const { auth } = NextAuth(authConfig);
+/*** IMPORTANT:
+ * AUTH does NOT protect its own routes.
+ * Instead:
+ *  It only needs to let SSO handshake flow through without modification.
+ */
 
-export default auth(async (req) => {
-  const { nextUrl } = req;
-  const pathname = nextUrl.pathname;
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  const isLoggedIn = !!req.auth;
-
-  const isApiAuth = pathname.startsWith(apiAuthPrefix); // /api/auth
-  const isApiRoute = pathname.startsWith("/api");
-  const isPublicRoute = publicRoutes.includes(pathname);
-  const isAuthRoute = authRoutes.includes(pathname);
-
-  const prompt = nextUrl.searchParams.get("prompt");
-  const hasReturnParam =
-    nextUrl.searchParams.has("redirect") ||
-    nextUrl.searchParams.has("redirect_uri") ||
-    nextUrl.searchParams.has("callbackUrl");
-
-  const forceLogin = prompt === "login";
-
-  if (isApiRoute || isApiAuth) return NextResponse.next();
-
-  if (isPublicRoute) return NextResponse.next();
-
-  if (isAuthRoute) {
-    if (isLoggedIn && !forceLogin && !hasReturnParam) {
-      return NextResponse.redirect(new URL("/dashboard", nextUrl));
-    }
+  // 1. Allow static files
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon") ||
+    pathname.endsWith(".svg") ||
+    pathname.endsWith(".png") ||
+    pathname.endsWith(".jpg") ||
+    pathname.endsWith(".jpeg") ||
+    pathname.endsWith(".gif")
+  ) {
     return NextResponse.next();
   }
 
-  if (!isLoggedIn) {
-    const signIn = new URL("/sign-in", nextUrl);
-    signIn.searchParams.set("redirect", nextUrl.pathname + nextUrl.search);
-    return NextResponse.redirect(signIn);
+  // 2. Allow all authentication-related screens
+  if (authRoutes.includes(pathname)) {
+    return NextResponse.next();
+  }
+
+  // 3. Allow SSO handshake
+  if (pathname.startsWith("/auth/callback") || pathname.startsWith("/sso")) {
+    return NextResponse.next();
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [

@@ -1,41 +1,61 @@
 "use client";
-import { useEffect } from "react";
 import { getSafeRedirect } from "@/lib/safe-redirect";
-import { useSession } from "next-auth/react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function AuthLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const search = useSearchParams();
+
   useEffect(() => {
     try {
-      const sp = new URLSearchParams(window.location.search);
       const raw =
-        sp.get("redirect") ??
-        sp.get("callbackUrl") ??
-        sp.get("redirect_uri") ??
+        search.get("redirect") ??
+        search.get("callbackUrl") ??
+        search.get("redirect_uri") ??
         null;
 
       const safe = getSafeRedirect(raw);
-      if (safe) sessionStorage.setItem("redirect_hint", safe);
+      if (safe) {
+        console.log("Captured redirect:", safe);
+        sessionStorage.setItem("redirect_hint", safe);
+      }
     } catch (e) {
       console.log("Redirect capture skipped");
     }
+  }, [search]);
+
+  // Check if user is logged in via JWT
+  useEffect(() => {
+    const token = localStorage.getItem("isce_auth_token");
+    setIsLoggedIn(!!token);
   }, []);
 
+  /**---------------------------------------------------------
+   * Redirect logged-in users AWAY from sign-in/sign-up pages
+   -----------------------------------------------------------*/
   useEffect(() => {
-    if (!session) return;
+    if (!isLoggedIn) return;
 
     const restricted = ["/sign-in", "/sign-up", "/register"];
-    if (restricted.includes(pathname)) {
+
+    const isRestricted = restricted.includes(pathname);
+
+    const hasRedirect = search.has("redirect_uri");
+    const forcedLogin = search.get("prompt") === "login";
+
+    if (isLoggedIn && isRestricted && !hasRedirect && !forcedLogin) {
       router.replace("/dashboard");
     }
-  }, [session, pathname]);
+  }, [isLoggedIn, pathname, router]);
 
   return <>{children}</>;
 }

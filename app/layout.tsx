@@ -4,8 +4,6 @@ import { Inter_Tight } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
-import { SessionProvider } from "next-auth/react";
-
 const interTight = Inter_Tight({
   variable: "--inter-tight",
   subsets: ["latin"],
@@ -26,11 +24,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${interTight.className} antialiased`}>
         <Toaster richColors />
-        <SessionProvider>
-          <NextTopLoader color="#ffffff" showSpinner={false} />
-          {children}
-          <Toaster richColors position="bottom-right" />
-        </SessionProvider>
+        <NextTopLoader color="#ffffff" showSpinner={false} />
+        {children}
+        <Toaster richColors position="bottom-right" />
       </body>
     </html>
   );
