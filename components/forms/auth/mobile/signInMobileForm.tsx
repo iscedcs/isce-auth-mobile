@@ -69,7 +69,7 @@ export default function MobileSignInForm({
     }
   }, [emailWatch]);
 
-  // const prompt = sp.get("prompt") === "login" ? "&prompt=login" : "";
+  const promptQuery = sp.get("prompt") === "login" ? "&prompt=login" : "";
 
   useEffect(() => {
     if (sp.get("prompt") === "login") {
@@ -78,16 +78,18 @@ export default function MobileSignInForm({
   }, [sp]);
 
   const forgotPasswordHref = callbackUrl
-    ? `/forgot-password?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
-    : `/forgot-password${prompt}`;
+    ? `/forgot-password?redirect=${encodeURIComponent(
+        callbackUrl
+      )}${promptQuery}`
+    : `/forgot-password${promptQuery}`;
 
   const handleRedirectToForgotPassword = () => {
     router.push(forgotPasswordHref);
   };
 
   const signUpHref = callbackUrl
-    ? `/sign-up?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
-    : `/sign-up${prompt}`;
+    ? `/sign-up?redirect=${encodeURIComponent(callbackUrl)}${promptQuery}`
+    : `/sign-up${promptQuery}`;
 
   const handleRedirectCreateAccount = () => {
     router.push(signUpHref);
@@ -106,8 +108,14 @@ export default function MobileSignInForm({
       setIsLoading(true);
       const result = await AuthService.signIn(data.email, data.password);
 
-      if (result?.success || !result?.data) {
+      if (!result?.success) {
         toast.error(result.message || "Invalid email or password");
+        setIsLoading(false);
+        return;
+      }
+
+      if (!result?.data) {
+        toast.error("Authentication failed: missing user data");
         setIsLoading(false);
         return;
       }
@@ -121,7 +129,7 @@ export default function MobileSignInForm({
       }
 
       localStorage.setItem("isce_auth_token", accessToken);
-      toast.success(`Welcome back${firstName ? ", " + firstName : ""}!`);
+      toast.success(`Welcome back${firstName ? ", " + firstName : ""}! 👋`);
       const safe = getSafeRedirect(callbackUrl) || getRedirect();
 
       if (safe && accessToken) {
@@ -132,7 +140,6 @@ export default function MobileSignInForm({
         const finalPath = target.pathname + target.search + target.hash;
         callback.searchParams.set("redirect", finalPath);
 
-        toast.success("Welcome back!");
         window.location.href = callback.toString();
         return;
       }

@@ -1,33 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { AuthService } from "@/lib/auth-service";
-import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getRedirect } from "@/lib/auth-flow";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
-import { FaRegEye } from "react-icons/fa";
-import { LuEyeClosed } from "react-icons/lu";
-import { MdEmail } from "react-icons/md";
-import { BiRename } from "react-icons/bi";
-import { FaPhoneAlt } from "react-icons/fa";
-import { MdOutlinePassword } from "react-icons/md";
-import Link from "next/link";
 import { getSafeRedirect } from "@/lib/safe-redirect";
-import { getSession, signIn } from "next-auth/react";
+import Link from "next/link";
+import { BiRename } from "react-icons/bi";
+import { FaPhoneAlt, FaRegEye } from "react-icons/fa";
+import { LuEyeClosed } from "react-icons/lu";
+import { MdEmail, MdOutlinePassword } from "react-icons/md";
 
 export default function QuickRegisterForm() {
   const router = useRouter();
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [redirectURL, setRedirectURL] = useState("/sign-in");
   const sp = useSearchParams();
-
-  // Save redirect during onboarding
-  useEffect(() => {
-    const safe = getSafeRedirect(sp.get("redirect"));
-    if (safe) sessionStorage.setItem("redirect_hint", safe);
-  }, [sp]);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -38,11 +25,36 @@ export default function QuickRegisterForm() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [redirectURL, setRedirectURL] = useState("/sign-in");
 
+  /** ----------------------------------------------------------
+   *  STORE REDIRECT DESTINATION (if coming from a product)
+   ------------------------------------------------------------*/
+  const safeRedirect = getSafeRedirect(
+    sp.get("redirect") || sp.get("redirect_uri") || sp.get("callbackUrl")
+  );
+
+  useEffect(() => {
+    if (safeRedirect) sessionStorage.setItem("redirect_hint", safeRedirect);
+  }, [safeRedirect]);
+
+  const getFinalRedirect = () => {
+    return (
+      sessionStorage.getItem("redirect_hint") || "/" // fallback after signin
+    );
+  };
+
+  /** ----------------------------------------------------------
+   *  HANDLE INPUT
+   ------------------------------------------------------------*/
   const handleChange = (key: string, value: string) => {
     setForm({ ...form, [key]: value });
   };
 
+  /** ----------------------------------------------------------
+   *  SUBMIT (Register → Auto Login → SSO Callback)
+   ------------------------------------------------------------*/
   const handleSubmit = async () => {
     const { firstName, lastName, email, phone, password } = form;
 
@@ -54,7 +66,8 @@ export default function QuickRegisterForm() {
     setLoading(true);
 
     try {
-      const response = await AuthService.quickRegister({
+      /** 1. REGISTER USER */
+      const reg = await AuthService.quickRegister({
         firstName,
         lastName,
         email,
@@ -62,47 +75,46 @@ export default function QuickRegisterForm() {
         password,
       });
 
-      if (!response.success) {
-        toast.error(response.message);
+      if (!reg.success) {
+        toast.error(reg.message);
         setLoading(false);
         return;
       }
-      const signInResult = await signIn("credentials", {
-        email: email,
-        password: password,
-        redirect: false,
-      });
 
-      if (signInResult?.ok) {
-        const session = await getSession();
-        const token = (session as any)?.user?.accessToken;
+      /** 2. AUTO LOGIN (NO NEXTAUTH) */
+      const login = await AuthService.signIn(email, password);
 
-        const safe = getSafeRedirect(getRedirect());
-
-        setTimeout(() => {
-          if (safe && token) {
-            const target = new URL(safe);
-            const callback = new URL("/auth/callback", target.origin);
-            callback.searchParams.set("token", token);
-
-            const finalPath = target.pathname + target.search + target.hash;
-            callback.searchParams.set("redirect", finalPath);
-
-            window.location.href = callback.toString();
-            return;
-          }
-
-          window.location.href = "/";
-        }, 1500);
-
+      if (!login?.success && !login.data?.accessToken) {
+        toast.error(
+          "Account created, but login failed. Please login manually."
+        );
+        router.push("/sign-in");
         return;
       }
+      const token = login.data?.accessToken;
 
-      const r = getRedirect();
-      toast.success("Account created! Please sign in.");
-      window.location.href = `/sign-in?redirect=${encodeURIComponent(r)}`;
+      /** STORE TOKEN LOCALLY (AUTH ONLY) */
+      localStorage.setItem("isce_auth_token", token);
+
+      toast.success(`Welcome, ${firstName} ${lastName}🎉 !`);
+
+      /** 3. DETERMINE REDIRECT DESTINATION */
+      const finalRedirect = getSafeRedirect(getFinalRedirect()) || "/";
+
+      /** 4. BUILD SSO CALLBACK */
+      const target = new URL(finalRedirect);
+      const callback = new URL("/auth/callback", target.origin);
+
+      callback.searchParams.set("token", token);
+      callback.searchParams.set(
+        "redirect",
+        target.pathname + target.search + target.hash
+      );
+
+      /** 5. REDIRECT (SSO HANDOFF) */
+      window.location.href = callback.toString();
     } catch (error: any) {
-      toast.error(error?.message || "Something went wrong");
+      toast.error(error?.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
