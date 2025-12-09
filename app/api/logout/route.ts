@@ -1,16 +1,10 @@
-export function getSafeRedirect(url?: string | null): string | null {
-  if (!url) return null;
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
-  try {
-    const allowed = process.env.NEXT_PUBLIC_ALLOWED_APP_ORIGINS!.split(",");
+export async function POST() {
+  // Clear auth cookies
+  (await cookies()).set("accessToken", "", { maxAge: 0 });
+  (await cookies()).set("refreshToken", "", { maxAge: 0 });
 
-    const u = new URL(url, window.location.origin);
-
-    if (allowed.includes(u.origin)) return u.toString();
-    if (url.startsWith("/")) return url;
-
-    return null;
-  } catch {
-    return null;
-  }
+  return NextResponse.json({ success: true });
 }
