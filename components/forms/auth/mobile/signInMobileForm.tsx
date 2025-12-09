@@ -52,16 +52,6 @@ export default function MobileSignInForm({
   const emailWatch = form.watch("email");
 
   useEffect(() => {
-    const safe = getSafeRedirect(callbackUrl);
-    if (safe) sessionStorage.setItem("redirect_hint", safe);
-  }, [callbackUrl]);
-
-  function getRedirect() {
-    const fromStorage = sessionStorage.getItem("redirect_hint");
-    return getSafeRedirect(fromStorage) || "/";
-  }
-
-  useEffect(() => {
     if (emailWatch === "") {
       setIsLoading(true);
     } else {
@@ -69,13 +59,33 @@ export default function MobileSignInForm({
     }
   }, [emailWatch]);
 
-  const promptQuery = sp.get("prompt") === "login" ? "&prompt=login" : "";
+  const promptIsLogin = sp.get("prompt") === "login";
 
+  /** -------------------------------------------
+   * 🧹 1. HANDLE FORCE LOGIN FLOW
+   * ------------------------------------------*/
   useEffect(() => {
-    if (sp.get("prompt") === "login") {
+    if (promptIsLogin) {
       localStorage.removeItem("isce_auth_token");
+      sessionStorage.removeItem("redirect_hint");
+      document.cookie = "accessToken=; Max-Age=0; path=/;";
     }
-  }, [sp]);
+  }, [promptIsLogin]);
+
+  /** -------------------------------------------
+   * 🧹 2. STORE SAFE REDIRECT
+   * ------------------------------------------*/
+  useEffect(() => {
+    const safe = getSafeRedirect(callbackUrl);
+    if (safe) sessionStorage.setItem("redirect_hint", safe);
+  }, [callbackUrl]);
+
+  const getRedirect = () => {
+    const stored = sessionStorage.getItem("redirect_hint");
+    return getSafeRedirect(stored) || "/";
+  };
+
+  const promptQuery = promptIsLogin ? "&prompt=login" : "";
 
   const forgotPasswordHref = callbackUrl
     ? `/forgot-password?redirect=${encodeURIComponent(
