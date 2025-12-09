@@ -1,19 +1,18 @@
 "use client";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
-export default function AuthLayout({
+function AuthLayoutInner({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const router = useRouter();
   const pathname = usePathname();
+  const search = useSearchParams();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  const search = useSearchParams();
 
   useEffect(() => {
     try {
@@ -58,4 +57,16 @@ export default function AuthLayout({
   }, [isLoggedIn, pathname, router]);
 
   return <>{children}</>;
+}
+
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={null}>
+      <AuthLayoutInner>{children}</AuthLayoutInner>
+    </Suspense>
+  );
 }
