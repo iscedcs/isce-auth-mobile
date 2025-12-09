@@ -27,12 +27,9 @@ import { toast } from "sonner";
 import z from "zod";
 
 export type signInValues = z.infer<typeof signInFormSchema>;
+type Props = { callbackUrl: string | null };
 
-export default function MobileSignInForm({
-  callbackUrl,
-}: {
-  callbackUrl: string | null;
-}) {
+export default function MobileSignInForm({ callbackUrl }: Props) {
   const [password, setPassword] = useState(true);
   const [loading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
@@ -47,7 +44,7 @@ export default function MobileSignInForm({
   });
 
   const router = useRouter();
-  const sp = useSearchParams();
+  const singleProduct = useSearchParams();
 
   const emailWatch = form.watch("email");
 
@@ -59,47 +56,32 @@ export default function MobileSignInForm({
     }
   }, [emailWatch]);
 
-  const promptIsLogin = sp.get("prompt") === "login";
+  const prompt = singleProduct.get("prompt") === "login" ? "&prompt=login" : "";
 
-  /** -------------------------------------------
-   * 🧹 1. HANDLE FORCE LOGIN FLOW
-   * ------------------------------------------*/
-  useEffect(() => {
-    if (promptIsLogin) {
-      localStorage.removeItem("isce_auth_token");
-      sessionStorage.removeItem("redirect_hint");
-      document.cookie = "accessToken=; Max-Age=0; path=/;";
-    }
-  }, [promptIsLogin]);
+  // /** -------------------------------------------
+  //  * 🧹 2. STORE SAFE REDIRECT
+  //  * ------------------------------------------*/
+  // useEffect(() => {
+  //   const safe = getSafeRedirect(callbackUrl);
+  //   if (safe) sessionStorage.setItem("redirect_hint", safe);
+  // }, [callbackUrl]);
 
-  /** -------------------------------------------
-   * 🧹 2. STORE SAFE REDIRECT
-   * ------------------------------------------*/
-  useEffect(() => {
-    const safe = getSafeRedirect(callbackUrl);
-    if (safe) sessionStorage.setItem("redirect_hint", safe);
-  }, [callbackUrl]);
-
-  const getRedirect = () => {
-    const stored = sessionStorage.getItem("redirect_hint");
-    return getSafeRedirect(stored) || "/";
-  };
-
-  const promptQuery = promptIsLogin ? "&prompt=login" : "";
+  // const getRedirect = () => {
+  //   const stored = sessionStorage.getItem("redirect_hint");
+  //   return getSafeRedirect(stored) || "/";
+  // };
 
   const forgotPasswordHref = callbackUrl
-    ? `/forgot-password?redirect=${encodeURIComponent(
-        callbackUrl
-      )}${promptQuery}`
-    : `/forgot-password${promptQuery}`;
+    ? `/forgot-password?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
+    : `/forgot-password${prompt}`;
 
   const handleRedirectToForgotPassword = () => {
     router.push(forgotPasswordHref);
   };
 
   const signUpHref = callbackUrl
-    ? `/sign-up?redirect=${encodeURIComponent(callbackUrl)}${promptQuery}`
-    : `/sign-up${promptQuery}`;
+    ? `/sign-up?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
+    : `/sign-up${prompt}`;
 
   const handleRedirectCreateAccount = () => {
     router.push(signUpHref);
@@ -140,7 +122,7 @@ export default function MobileSignInForm({
 
       localStorage.setItem("isce_auth_token", accessToken);
       toast.success(`Welcome back${firstName ? ", " + firstName : ""}! 👋`);
-      const safe = getSafeRedirect(callbackUrl) || getRedirect();
+      const safe = getSafeRedirect(callbackUrl);
 
       if (safe && accessToken) {
         const target = new URL(safe);
