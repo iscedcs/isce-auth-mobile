@@ -11,8 +11,49 @@ const interTight = Inter_Tight({
 });
 
 export const metadata: Metadata = {
-  title: "ISCE Auth",
+  title: {
+    default: "ISCE Auth",
+    template: "%s | ISCE Auth",
+  },
   description: "A centralized authentication service by ISCE",
+  keywords: ["ISCE", "authentication", "auth", "login", "sign up", "security"],
+  authors: [{ name: "ISCE Digital Concept" }],
+  creator: "ISCE Digital Concept",
+  publisher: "ISCE Digital Concept",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: process.env.NEXT_PUBLIC_BASE_URL
+    ? new URL(process.env.NEXT_PUBLIC_BASE_URL)
+    : undefined,
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "ISCE Auth",
+    title: "ISCE Auth",
+    description: "A centralized authentication service by ISCE",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ISCE Auth",
+    description: "A centralized authentication service by ISCE",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  // verification: {
+
+  // },
 };
 
 export default function RootLayout({
