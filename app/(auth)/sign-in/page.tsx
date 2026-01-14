@@ -1,6 +1,22 @@
 import SignInDesktop from "@/components/auth/desktop/signInDesktop";
 import SignInMobile from "@/components/auth/signInMobile";
 import Responsive from "@/components/shared/responsive";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Sign In",
+  description:
+    "Sign in to your ISCE account to access all services and products",
+  openGraph: {
+    title: "Sign In | ISCE Auth",
+    description:
+      "Sign in to your ISCE account to access all services and products",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function SignInPage({
   searchParams,
