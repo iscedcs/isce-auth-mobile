@@ -1,6 +1,6 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AuthService } from "@/lib/auth-service";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 import {
@@ -10,12 +10,14 @@ import {
   UserTypeFormData,
 } from "@/schemas/desktop";
 import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 import { AuthLayout } from "./forms/auth/auth-layout";
 import { AccountTypeForm } from "./forms/auth/desktop/account-type-form";
 import { OtpVerificationForm } from "./forms/auth/desktop/otp-verification-form";
 import { PasswordCreationForm } from "./forms/auth/desktop/password-creation-form";
 import { UserDetailsForm } from "./forms/auth/desktop/user-details-form";
 import { PasswordResetModal } from "./forms/auth/password-reset-modal";
+import { Button } from "./ui/button";
 
 type SignupData = {
   userType?: UserTypeFormData;
@@ -33,6 +35,8 @@ export default function SignUpClient({ callbackUrl }: Props) {
   const [isPasswordResetModalOpen, setIsPasswordResetModalOpen] =
     useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const otpRequestInFlightRef = useRef(false);
+  const otpResendInFlightRef = useRef(false);
   const singleProduct = useSearchParams();
   const safe = getSafeRedirect(callbackUrl);
 
@@ -100,9 +104,6 @@ export default function SignUpClient({ callbackUrl }: Props) {
       ...prev,
       userDetails,
     }));
-    toast.success(
-      "Details saved! Please check your email for verification code."
-    );
     setCurrentStep(3);
   };
 
@@ -110,6 +111,11 @@ export default function SignUpClient({ callbackUrl }: Props) {
     if (!signupData.userDetails?.email) {
       toast.error("Email not found. Please start over.");
       setCurrentStep(1);
+      return;
+    }
+    if (!signupData.passwordCreation?.password) {
+      toast.error("Password not found. Please set your password first.");
+      setCurrentStep(3);
       return;
     }
 
@@ -128,10 +134,41 @@ export default function SignUpClient({ callbackUrl }: Props) {
         return;
       }
 
-      // For now, just store the OTP data and move to next step
+      // Store the OTP data and continue to sign-in
       setSignupData((prev) => ({ ...prev, otpVerification: data }));
       toast.success("Email verified successfully!");
-      setCurrentStep(4);
+
+      const login = await AuthService.signIn(
+        signupData.userDetails.email,
+        signupData.passwordCreation.password
+      );
+      if (!login.success || !login.data?.accessToken) {
+        toast.error(
+          "Account verified, but login failed. Please sign in manually."
+        );
+        const redirect = safe || getRedirect();
+        router.push(`/sign-in?redirect=${encodeURIComponent(redirect)}`);
+        setIsLoading(false);
+        return;
+      }
+
+      const accessToken = login.data.accessToken;
+      localStorage.setItem("isce_auth_token", accessToken);
+
+      toast.success("Welcome! Redirecting...");
+
+      if (safe && accessToken) {
+        const target = new URL(safe);
+        const callback = new URL("/auth/callback", target.origin);
+        callback.searchParams.set("token", accessToken);
+
+        const finalPath = target.pathname + target.search + target.hash;
+        callback.searchParams.set("redirect", finalPath);
+
+        window.location.href = callback.toString();
+        return;
+      }
+      router.push("/dashboard");
     } catch (error) {
       console.error("OTP verification error:", error);
       toast.error("An unexpected error occurred. Please try again.");
@@ -143,6 +180,7 @@ export default function SignUpClient({ callbackUrl }: Props) {
   const handlePasswordCreationSubmit = async (
     data: PasswordCreationFormData
   ) => {
+    if (otpRequestInFlightRef.current) return;
     if (!signupData.userDetails) {
       toast.error("User details not found. Please start over.");
       setCurrentStep(1);
@@ -152,6 +190,7 @@ export default function SignUpClient({ callbackUrl }: Props) {
     setIsLoading(true);
 
     try {
+      otpRequestInFlightRef.current = true;
       const response = await AuthService.completeSignup(
         signupData.userDetails,
         data
@@ -159,49 +198,37 @@ export default function SignUpClient({ callbackUrl }: Props) {
 
       if (response.success) {
         setSignupData((prev) => ({ ...prev, passwordCreation: data }));
-        toast.success("Account created successfully!");
-
-        const login = await AuthService.signIn(
-          signupData.userDetails.email,
-          data.password
+        const otpResponse = await AuthService.requestOtp(
+          signupData.userDetails.email
         );
-        if (!login.success || !login.data?.accessToken) {
-          toast.error(
-            "Account created, but login failed. Please sign in manually."
-          );
-          const redirect = safe || getRedirect();
-          router.push(`/sign-in?redirect=${encodeURIComponent(redirect)}`);
-          setIsLoading(false);
+        if (!otpResponse.success) {
+          toast.error(otpResponse.message, { id: "desktop-otp-request" });
           return;
         }
 
-        const accessToken = login.data.accessToken;
-        localStorage.setItem("isce_auth_token", accessToken);
-
-        toast.success("Welcome! Redirecting...");
-
-        if (safe && accessToken) {
-          const target = new URL(safe);
-          const callback = new URL("/auth/callback", target.origin);
-          callback.searchParams.set("token", accessToken);
-
-          const finalPath = target.pathname + target.search + target.hash;
-          callback.searchParams.set("redirect", finalPath);
-
-          window.location.href = callback.toString();
-          return;
-        }
-        router.push("/dashboard");
+        toast.success(
+          "Details saved! Please check your email for verification code.",
+          { id: "desktop-otp-request" }
+        );
+        setCurrentStep(4);
+      } else {
+        toast.error(response.message || "Unable to create your account.", {
+          id: "desktop-signup",
+        });
       }
     } catch (error) {
       console.error("Complete signup error:", error);
-      toast.error("An unexpected error occurred. Please try again.");
+      toast.error("An unexpected error occurred. Please try again.", {
+        id: "desktop-signup",
+      });
     } finally {
       setIsLoading(false);
+      otpRequestInFlightRef.current = false;
     }
   };
 
   const handleResendCode = async () => {
+    if (otpResendInFlightRef.current) return;
     if (!signupData.userDetails?.email) {
       toast.error("Email not found. Please start over.");
       return;
@@ -210,23 +237,31 @@ export default function SignUpClient({ callbackUrl }: Props) {
     setIsLoading(true);
 
     try {
+      otpResendInFlightRef.current = true;
       const response = await AuthService.requestOtp(
         signupData.userDetails.email
       );
 
       if (response.success) {
-        toast.success("Verification code sent!");
+        toast.success("Verification code sent!", { id: "desktop-otp-resend" });
       } else {
-        toast.error(response.message);
+        toast.error(response.message, { id: "desktop-otp-resend" });
       }
-
-      toast.success("Verification code sent!");
     } catch (error) {
       console.error("Resend OTP error:", error);
-      toast.error("Failed to resend code. Please try again.");
+      toast.error("Failed to resend code. Please try again.", {
+        id: "desktop-otp-resend",
+      });
     } finally {
       setIsLoading(false);
+      otpResendInFlightRef.current = false;
     }
+  };
+
+  const handlePreviousStep = () => {
+    if (isLoading) return;
+    if (currentStep <= 1) return;
+    setCurrentStep((prev) => Math.max(1, prev - 1));
   };
 
   const getStepTitle = () => {
@@ -236,9 +271,9 @@ export default function SignUpClient({ callbackUrl }: Props) {
       case 2:
         return "Enter your details";
       case 3:
-        return "Enter the OTP code sent to your mail";
-      case 4:
         return "Set your password to your account";
+      case 4:
+        return "Enter the OTP code sent to your mail";
       default:
         return "";
     }
@@ -270,18 +305,18 @@ export default function SignUpClient({ callbackUrl }: Props) {
         );
       case 3:
         return (
-          <OtpVerificationForm
-            onSubmit={handleOtpVerificationSubmit}
-            onResendCode={handleResendCode}
-            defaultValues={signupData.otpVerification}
+          <PasswordCreationForm
+            onSubmit={handlePasswordCreationSubmit}
+            defaultValues={signupData.passwordCreation}
             isLoading={isLoading}
           />
         );
       case 4:
         return (
-          <PasswordCreationForm
-            onSubmit={handlePasswordCreationSubmit}
-            defaultValues={signupData.passwordCreation}
+          <OtpVerificationForm
+            onSubmit={handleOtpVerificationSubmit}
+            onResendCode={handleResendCode}
+            defaultValues={signupData.otpVerification}
             isLoading={isLoading}
           />
         );
@@ -297,7 +332,20 @@ export default function SignUpClient({ callbackUrl }: Props) {
       cardImages={cardImages}
       currentSlide={current}
       setCurrentSlide={setCurrent}>
-      {renderCurrentStep()}
+      <div className="space-y-4">
+        {currentStep > 1 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handlePreviousStep}
+            className="px-0 text-gray-400 hover:text-white">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+        )}
+        {renderCurrentStep()}
+      </div>
       <PasswordResetModal
         isOpen={isPasswordResetModalOpen}
         onClose={() => setIsPasswordResetModalOpen(false)}

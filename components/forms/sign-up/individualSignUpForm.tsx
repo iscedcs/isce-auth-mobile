@@ -29,7 +29,7 @@ import { format } from "date-fns/format";
 import { CalendarIcon } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { BiRename } from "react-icons/bi";
 import { FaPhoneAlt, FaRegEye } from "react-icons/fa";
@@ -74,6 +74,9 @@ export default function IndividualSignUpForm({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isBuildingProfile, setIsBuidlingProfile] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const otpRequestInFlightRef = useRef(false);
+  const otpResendInFlightRef = useRef(false);
+  const otpVerifyInFlightRef = useRef(false);
 
   const STEP_SIZE = 15;
   const FIRST_STEP = 2 * STEP_SIZE; // 30
@@ -263,16 +266,19 @@ export default function IndividualSignUpForm({
   ]);
 
   const handleResendOTP = async () => {
+    if (otpResendInFlightRef.current) return;
     try {
+      otpResendInFlightRef.current = true;
       setResendOTP(true);
       setIsLoading(true);
       const res = await fetch("/api/request-verification-code", {
         body: JSON.stringify({ email }),
         method: "POST",
       });
-      const data = res.json();
-      if (res.ok) {
+      const data = await res.json();
+      if (!isApiErrorResponse(res, data)) {
         toast.success("Verification Code Resent", {
+          id: "otp-resend",
           description: "Check your email for the code.",
         });
         setIsLoading(false);
@@ -280,13 +286,18 @@ export default function IndividualSignUpForm({
         return data;
       }
       toast.error("Something went wrong", {
-        description: "There was a problem getting the verification code.",
+        id: "otp-resend",
+        description:
+          getApiErrorMessage(data) ||
+          "There was a problem getting the verification code.",
       });
       setIsLoading(false);
       return null;
     } catch (e: any) {
       setIsLoading(false);
       console.log("Error resending OTP Code", e);
+    } finally {
+      otpResendInFlightRef.current = false;
     }
   };
 
@@ -294,21 +305,24 @@ export default function IndividualSignUpForm({
   useEffect(() => {
     const verifyOTP = async () => {
       if (otpWatch.length === 6) {
+        if (otpVerifyInFlightRef.current) return;
         const isValid = await otpForm.trigger("otp");
         if (!isValid) return;
         try {
+          otpVerifyInFlightRef.current = true;
           setIsLoading(true);
           const res = await fetch("/api/verify-code", {
             body: JSON.stringify({ email, code }),
             method: "POST",
           });
           const data = await res.json();
-          if (res.ok) {
+        if (!isApiErrorResponse(res, data)) {
             setIsLoading(false);
             setIsOtpScreen(false);
             setIsEmailVerified(true);
 
             toast.success("Email verified successfully", {
+              id: "otp-verify",
               description: "Your email has been verified successfully",
             });
 
@@ -320,19 +334,18 @@ export default function IndividualSignUpForm({
           setIsLoading(false);
           // Stay / return on email step
           goToStep(15 * 3, 3);
-          if (res.status === 400) {
-            toast.error("Something went wrong", {
-              description: "OTP Code is not valid, please try again",
-            });
-          } else {
-            toast.error("Something went wrong", {
-              description:
-                "There was a problem verifying your email address. Please try again.",
-            });
-          }
+          const apiMessage = getApiErrorMessage(data);
+          toast.error("Something went wrong", {
+            id: "otp-verify",
+            description:
+              apiMessage ||
+              "There was a problem verifying your email address. Please try again.",
+          });
         } catch (e) {
           setIsLoading(false);
           console.log("Problem verifying email address", e);
+        } finally {
+          otpVerifyInFlightRef.current = false;
         }
       }
     };
@@ -392,28 +405,30 @@ export default function IndividualSignUpForm({
 
     // Step 3 (email) -> request OTP (stay on step, open OTP screen)
     if (step === 15 * 3 && !isOtpScreen) {
+      if (otpRequestInFlightRef.current) return;
       const valid = await stepGuard(15 * 3);
       if (!valid) return;
 
       try {
+        otpRequestInFlightRef.current = true;
         setIsLoading(true);
         const res = await fetch("/api/request-verification-code", {
           body: JSON.stringify({ email }),
           method: "POST",
         });
         const data = await res.json();
-        if (res.ok) {
+        if (!isApiErrorResponse(res, data)) {
           toast.success("Verification Code Sent", {
+            id: "otp-request",
             description: "Check your email for the code.",
           });
           setIsOtpScreen(true);
-        } else if (res.status === 500) {
-          toast.error("Something went wrong", {
-            description: "This email is already being used.",
-          });
         } else {
+          const apiMessage = getApiErrorMessage(data);
           toast.error("Something went wrong", {
-            description: "There was a problem getting the verification code.",
+            id: "otp-request",
+            description:
+              apiMessage || "There was a problem getting the verification code.",
           });
         }
         setIsLoading(false);
@@ -421,6 +436,8 @@ export default function IndividualSignUpForm({
       } catch (e: any) {
         setIsLoading(false);
         console.log("Error sending OTP", e);
+      } finally {
+        otpRequestInFlightRef.current = false;
       }
       return;
     }
@@ -467,6 +484,63 @@ export default function IndividualSignUpForm({
     setIsConfirmPasswordScreen(false);
     // After password step, go to address step (step 6)
     goToStep(15 * 6, 6);
+  };
+
+  const getSignupErrorMessage = (responseData: any) => {
+    const detailsMessage = responseData?.details?.message;
+    if (Array.isArray(detailsMessage)) {
+      return detailsMessage.filter(Boolean).join(", ");
+    }
+    if (typeof detailsMessage === "string" && detailsMessage.trim()) {
+      return detailsMessage;
+    }
+
+    const directMessage = responseData?.message;
+    if (Array.isArray(directMessage)) {
+      return directMessage.filter(Boolean).join(", ");
+    }
+    if (typeof directMessage === "string" && directMessage.trim()) {
+      return directMessage;
+    }
+
+    if (typeof responseData?.error === "string" && responseData.error.trim()) {
+      return responseData.error;
+    }
+
+    return null;
+  };
+
+  const getApiErrorMessage = (responseData: any) => {
+    const directMessage = responseData?.message;
+    if (Array.isArray(directMessage)) {
+      return directMessage.filter(Boolean).join(", ");
+    }
+    if (typeof directMessage === "string" && directMessage.trim()) {
+      return directMessage;
+    }
+
+    if (typeof responseData?.error === "string" && responseData.error.trim()) {
+      return responseData.error;
+    }
+
+    return null;
+  };
+
+  const isApiErrorResponse = (res: Response, responseData: any) => {
+    if (!res.ok) return true;
+    if (responseData?.error) return true;
+
+    const statusCode = responseData?.statusCode;
+    if (typeof statusCode === "number" && statusCode >= 400) return true;
+
+    const status = responseData?.status;
+    if (typeof status === "string" && status.toLowerCase() === "error") {
+      return true;
+    }
+
+    if (responseData?.success === false) return true;
+
+    return false;
   };
 
   const handleSubmit = async (data: signUpValues) => {
@@ -556,8 +630,10 @@ export default function IndividualSignUpForm({
 
       setIsBuidlingProfile(false);
       goToStep(15 * 2, 2);
-      toast.error("Something is wrong", {
+      const backendMessage = getSignupErrorMessage(responseData);
+      toast.error("Sign up failed", {
         description:
+          backendMessage ||
           "There was a problem creating your account. Please try again.",
       });
       return null;

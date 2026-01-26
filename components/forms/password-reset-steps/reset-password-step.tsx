@@ -209,9 +209,11 @@ export function ResetPasswordStep({
                     />
                     <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={isLoading}
-                      className="absolute right-0 top-3 text-gray-400 hover:text-white">
+                      className="absolute right-0 top-3 h-5 w-5 p-0 text-gray-400 hover:text-white">
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </Button>
                   </div>
@@ -247,11 +249,13 @@ export function ResetPasswordStep({
                     />
                     <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
                       disabled={isLoading}
-                      className="absolute right-0 top-3 text-gray-400 hover:text-white">
+                      className="absolute right-0 top-3 h-5 w-5 p-0 text-gray-400 hover:text-white">
                       {showConfirmPassword ? (
                         <EyeOff size={20} />
                       ) : (
