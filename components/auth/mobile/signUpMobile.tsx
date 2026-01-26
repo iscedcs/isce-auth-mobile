@@ -125,7 +125,7 @@ export default function SignUpMobile({
                   />
                 </div>
               </Card>
-              <Card
+              {/* <Card
                 className="py-[10px] px-[15px] flex flex-row rounded-[12px] 
   opacity-40 cursor-not-allowed pointer-events-none border-0">
                 <CardContent className="">
@@ -138,7 +138,7 @@ export default function SignUpMobile({
                 <div className="">
                   <Checkbox checked={false} disabled />
                 </div>
-              </Card>
+              </Card> */}
 
               {/* <Card
                 className={` ${

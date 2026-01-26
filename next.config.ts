@@ -1,5 +1,22 @@
 import type { NextConfig } from "next";
 
+
+function domain(url?: string) { 
+  if (!url) return "";
+  try {
+    return new URL(url).origin;
+  } catch {
+    return "";
+  }
+}
+
+const API_DOMAINS = [
+  process.env.NEXT_PUBLIC_API_URL,
+  process.env.NEXT_PUBLIC_LIVE_ISCEAUTH_BACKEND_URL,
+  process.env.NEXT_PUBLIC_URL,
+  process.env.NEXT_PUBLIC_ALLOWED_APP_ORIGINS,
+].map(domain).filter(Boolean).join(" ");
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -55,7 +72,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+            value: "camera=(self), microphone=(self), geolocation=(self), interest-cohort=()",
           },
           {
             key: "Content-Security-Policy",
@@ -65,7 +82,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
               "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://*.googleapis.com https://*.google.com https://*.sanity.io https://*.amazonaws.com https://*.digitaloceanspaces.com https://*.vercel-storage.com https://flagcdn.com",
+              `connect-src 'self' ${API_DOMAINS} https://*.googleapis.com https://*.google.com https://*.sanity.io https://*.amazonaws.com https://*.digitaloceanspaces.com https://*.vercel-storage.com https://flagcdn.com"`,
               "frame-src 'self' https://*.google.com",
               "object-src 'none'",
               "base-uri 'self'",

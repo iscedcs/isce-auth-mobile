@@ -40,7 +40,7 @@ export function DesktopSignInForm({
         <h2 className="text-3xl md:text-2xl font-semibold mb-2 text-white">
           Welcome Back to ISCE Ecosystem
         </h2>
-        <p className="text-background font-normal text-sm">
+        <p className="text-white font-normal text-sm">
           Please enter your details to sign in your account
         </p>
       </div>
