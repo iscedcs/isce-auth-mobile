@@ -61,9 +61,9 @@ export function AccountTypeForm({
                           </p>
                         </div>
                       </Label>
-                      <div className="w-4 h-4 border border-gray-400 rounded-sm flex items-center justify-center peer-checked:border-white peer-checked:bg-white">
+                      <div className="w-4 h-4 border border-gray-400 rounded-sm flex items-center justify-center peer-data-[state=checked]:border-white peer-data-[state=checked]:bg-white">
                         <svg
-                          className="w-3 h-3 text-black opacity-0 peer-checked:opacity-100 transition"
+                          className="w-3 h-3 text-black opacity-0 peer-data-[state=checked]:opacity-100 transition"
                           fill="currentColor"
                           viewBox="0 0 20 20">
                           <path
@@ -107,7 +107,7 @@ export function AccountTypeForm({
                         </div>
                       </Label>
                     </div> */}
-                    <div
+                    {/* <div
                       className="relative items-start space-x-4 p-4 border border-gray-700 rounded-lg 
     opacity-40 cursor-not-allowed pointer-events-none">
                       <RadioGroupItem
@@ -126,7 +126,7 @@ export function AccountTypeForm({
                           </p>
                         </div>
                       </Label>
-                    </div>
+                    </div> */}
                   </RadioGroup>
                 </FormControl>
                 <FormMessage />

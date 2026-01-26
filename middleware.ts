@@ -33,25 +33,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Create response
-  const response = NextResponse.next();
-
-  // Add security headers to all responses
-  response.headers.set("X-DNS-Prefetch-Control", "on");
-  response.headers.set(
-    "Strict-Transport-Security",
-    "max-age=63072000; includeSubDomains; preload"
-  );
-  response.headers.set("X-Frame-Options", "SAMEORIGIN");
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-XSS-Protection", "1; mode=block");
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set(
-    "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=(), interest-cohort=()"
-  );
-
-  return response;
+ return NextResponse.next();
 }
 
 export const config = {
