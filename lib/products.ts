@@ -2,18 +2,18 @@
 
 export const PRODUCTS = [
   {
-    id: "events",
-    name: "Events",
-    // url: "https://gada.isce.tech",
-    url: "http://localhost:3323",
+    id: "gada",
+    name: "Gada",
+    url: "https://gada.isce.tech",
+    // url: "http://localhost:3323",
     icon: "calendar",
     active: true,
   },
   {
     id: "connect",
     name: "Connect",
-    // url: "http://connect-web-eight.vercel.app",
-    url: "http://localhost:3154",
+    url: "http://connect-web-eight.vercel.app",
+    // url: "http://localhost:3154",
     icon: "contact",
     active: true,
   },
