@@ -45,7 +45,7 @@ export function DesktopSignInForm({
         </p>
       </div>
 
-      <div className="space-y-3">
+      {/* <div className="space-y-3">
         <Button
           type="button"
           onClick={onGoogleSignIn}
@@ -63,7 +63,7 @@ export function DesktopSignInForm({
           {appleIcon}
           <span>Continue with Apple</span>
         </Button>
-      </div>
+      </div> */}
 
       {/* Divider */}
       <div className="relative">

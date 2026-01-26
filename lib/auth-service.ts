@@ -199,7 +199,7 @@ export class AuthService {
         confirmpassword: passwordData.password,
       };
 
-      console.log("Sending complete signup payload:", payload);
+      // console.log("Sending complete signup payload:", payload);
 
       const response = await axios.post(url, payload, {
         timeout: 15000,
@@ -208,7 +208,7 @@ export class AuthService {
         },
       });
 
-      console.log("Signup response:", response.data);
+      // console.log("Signup response:", response.data);
 
       return {
         success: true,
@@ -413,7 +413,7 @@ export class AuthService {
         confirmPassword: newPassword,
       };
 
-      console.log("Reset password payload:", payload);
+      // console.log("Reset password payload:", payload);
 
       const response = await axios.post(url, payload, {
         timeout: 10000,
