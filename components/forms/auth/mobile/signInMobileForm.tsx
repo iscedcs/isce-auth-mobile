@@ -121,7 +121,7 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
       }
 
       localStorage.setItem("isce_auth_token", accessToken);
-      toast.success(`Welcome back${firstName ? ", " + firstName : ""}! 👋`);
+      toast.success(`Welcome back${firstName ? ", " + firstName : ""}! `);
       const safe = getSafeRedirect(callbackUrl);
 
       if (safe && accessToken) {
