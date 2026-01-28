@@ -77,13 +77,13 @@ const nextConfig: NextConfig = {
           {
             key: "Content-Security-Policy",
             value: [
-              "default-src 'self' https:",
+              "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com https://*.googleapis.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com data:",
-              "img-src 'self' data: https: blob:",
-              `connect-src 'self' ${API_DOMAINS} https://*.googleapis.com https://*.google.com https://*.sanity.io https://open.spotify.com https://*.s3.amazonaws.com https://*.digitaloceanspaces.com https://*.vercel-storage.com https://flagcdn.com`,
-              "frame-src 'self' https://*.google.com https://*.googleapis.com https://maps.googleapis.com https://www.youtube.com  https://open.spotify.com https://fra1.digitaloceanspaces.com",
+              "img-src 'self' data: blob: https://encrypted-tbn0.gstatic.com https://*.s3.amazonaws.com https://*.digitaloceanspaces.com https://i.ytimg.com https://*.vercel-storage.com https://flagcdn.com https://cdn.sanity.io",
+              `connect-src 'self' ${API_DOMAINS} https://*.googleapis.com https://*.google.com https://*.sanity.io https://open.spotify.com https://*.s3.amazonaws.com https://*.digitaloceanspaces.com https://*.vercel-storage.com https://flagcdn.com https://auth.isce.tech https://connect-web-eight.vercel.app https://gada.isce.tech`,
+              "frame-src 'self' https://*.google.com https://*.googleapis.com https://maps.googleapis.com https://www.youtube.com https://open.spotify.com https://fra1.digitaloceanspaces.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
