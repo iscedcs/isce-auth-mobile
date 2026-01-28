@@ -1,3 +1,38 @@
+# ISCE Auth Mobile
+
+Mobile-focused authentication service for the ISCE ecosystem.
+
+## Getting started
+
+1. Install dependencies.
+2. Create an environment file from the example below.
+3. Run the development server.
+
+## Environment variables
+
+Create a `.env` file in the project root using the example below.
+
+```ini
+# App
+NEXT_PUBLIC_APP_NAME=ISCE Auth Mobile
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Auth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=replace-with-a-long-random-string
+
+# API
+NEXT_PUBLIC_API_BASE_URL=https://api.example.com
+
+# SSO
+SSO_CLIENT_ID=your-client-id
+SSO_CLIENT_SECRET=your-client-secret
+SSO_REDIRECT_URI=http://localhost:3000/sso/callback
+```
+
+## Scripts
+
+Use the standard Next.js scripts (e.g. `dev`, `build`, `start`) as defined in `package.json`.
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
