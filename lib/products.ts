@@ -12,7 +12,7 @@ export const PRODUCTS = [
   {
     id: "connect",
     name: "Connect",
-    url: "http://connect-web-eight.vercel.app",
+    url: "http://isce.app",
     // url: "http://localhost:3154",
     icon: "contact",
     active: true,
