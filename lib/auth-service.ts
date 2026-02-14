@@ -1,4 +1,5 @@
 import { AUTH_API, URLS } from '@/lib/const';
+import { authLogger } from '@/lib/auth-logger';
 import {
 	ForgotPasswordFormData,
 	OtpVerificationFormData,
@@ -80,19 +81,53 @@ export class AuthService {
   ---------------------------------------------------------*/
 	static async signIn(email: string, password: string) {
 		const url = `${this.baseUrl}${URLS.auth.sign_in}`;
+		const elapsed = authLogger.startTimer();
+
+		authLogger.log('SIGNIN', `signIn() called`, {
+			email: authLogger.maskEmail(email),
+			baseUrl: this.baseUrl || 'UNDEFINED',
+			urlPath: URLS.auth.sign_in,
+			fullUrl: url,
+			envCheck: {
+				NEXT_PUBLIC_AUTH_API_URL:
+					process.env.NEXT_PUBLIC_AUTH_API_URL || 'NOT_SET',
+			},
+		});
 
 		try {
+			authLogger.log('SIGNIN', `Sending POST to ${url}`, {
+				timeout: 10000,
+				contentType: 'application/json',
+			});
 			const response = await axios.post(
 				url,
 				{ email, password },
 				{
-					timeout: 15000,
+					timeout: 10000,
 					headers: { 'Content-Type': 'application/json' },
 				},
 			);
 
+			authLogger.log('SIGNIN', `Backend responded`, {
+				status: response.status,
+				statusText: response.statusText,
+				elapsedMs: elapsed(),
+				hasData: !!response.data,
+				hasNestedData: !!response.data?.data,
+				responseKeys: Object.keys(response.data || {}),
+			});
+
 			const payload = response.data?.data;
-			if (!payload) throw new Error('Malformed response: missing data');
+			if (!payload) {
+				authLogger.error(
+					'SIGNIN',
+					'Malformed response: missing data field',
+					{
+						responseKeys: Object.keys(response.data || {}),
+					},
+				);
+				throw new Error('Malformed response: missing data');
+			}
 
 			// Extract token
 			const accessToken =
@@ -101,8 +136,24 @@ export class AuthService {
 				payload?.data?.accessToken ||
 				null;
 
-			if (!accessToken)
+			authLogger.log('SIGNIN', `Token extraction`, {
+				hasAccessToken: !!accessToken,
+				hasRefreshToken: !!payload.refreshToken,
+				accessToken: authLogger.maskToken(accessToken),
+				userId: payload.id,
+				payloadKeys: Object.keys(payload),
+			});
+
+			if (!accessToken) {
+				authLogger.error(
+					'SIGNIN',
+					'Missing access token from backend',
+					{
+						payloadKeys: Object.keys(payload),
+					},
+				);
 				throw new Error('Missing access token from backend');
+			}
 
 			// Extract name logic
 			let firstName = payload.firstName || '';
@@ -114,10 +165,18 @@ export class AuthService {
 				lastName = lastName || parts.slice(1).join(' ') || '';
 			}
 
+			authLogger.log('SIGNIN', `Sign-in successful`, {
+				userId: payload.id,
+				email: authLogger.maskEmail(payload.email),
+				userType: payload.userType || 'USER',
+				totalElapsedMs: elapsed(),
+			});
+
 			return {
 				success: true,
 				data: {
 					accessToken,
+					refreshToken: payload.refreshToken || null,
 					id: payload.id,
 					email: payload.email,
 					firstName,
@@ -128,6 +187,23 @@ export class AuthService {
 				},
 			};
 		} catch (error: any) {
+			const errorClass = authLogger.classifyError(error);
+			authLogger.error('SIGNIN', `Sign-in failed`, {
+				errorClass,
+				errorMessage:
+					error?.response?.data?.message ||
+					error.message ||
+					'Unknown',
+				errorCode: error?.code,
+				status: error?.response?.status,
+				statusText: error?.response?.statusText,
+				url,
+				elapsedMs: elapsed(),
+				responseData:
+					error?.response?.data ?
+						JSON.stringify(error.response.data).slice(0, 300)
+					:	undefined,
+			});
 			return {
 				success: false,
 				message:

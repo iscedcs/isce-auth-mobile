@@ -10,11 +10,11 @@ function domain(url?: string) {
 }
 
 const API_DOMAINS = [
-	process.env.NEXT_PUBLIC_API_URL,
-	process.env.NEXT_PUBLIC_LIVE_ISCEAUTH_BACKEND_URL,
+	process.env.NEXT_PUBLIC_AUTH_API_URL,
 	process.env.NEXT_PUBLIC_URL,
 	process.env.NEXT_PUBLIC_ALLOWED_APP_ORIGINS,
 ]
+	.flatMap((v) => (v ? v.split(',') : []))
 	.map(domain)
 	.filter(Boolean)
 	.join(' ');
@@ -41,6 +41,10 @@ const nextConfig: NextConfig = {
 			{
 				protocol: 'https',
 				hostname: 'isce-image.fra1.digitaloceanspaces.com',
+			},
+			{
+				protocol: 'https',
+				hostname: 'fra1.digitaloceanspaces.com',
 			},
 			{
 				protocol: 'https',

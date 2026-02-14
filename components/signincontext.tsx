@@ -1,6 +1,8 @@
 'use client';
 
 import { AuthService } from '@/lib/auth-service';
+import { authLogger } from '@/lib/auth-logger';
+import { csrfFetch } from '@/lib/csrf-client';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 import { SignInFormData } from '@/schemas/desktop';
 import Image from 'next/image';
@@ -46,50 +48,174 @@ export default function SignInClient({ callbackUrl }: Props) {
 		:	`/sign-up${prompt}`;
 
 	const handleSignIn = async (data: SignInFormData) => {
+		const flow = authLogger.flowId();
+		const elapsed = authLogger.startTimer();
+		authLogger.log(
+			'DESKTOP-SIGNIN',
+			`[${flow}] === Sign-in flow started ===`,
+			{
+				email: authLogger.maskEmail(data.email),
+				callbackUrl: callbackUrl || 'none',
+				hasPrompt: !!prompt,
+				userAgent:
+					typeof navigator !== 'undefined' ?
+						navigator.userAgent.slice(0, 60)
+					:	'unknown',
+			},
+		);
 		setIsLoading(true);
 		try {
-			console.log('Attempting sign in with:', data.email);
-
+			authLogger.log(
+				'DESKTOP-SIGNIN',
+				`[${flow}] Step 1: Calling AuthService.signIn()`,
+			);
 			const result = await AuthService.signIn(data.email, data.password);
-
-			console.log('Sign in result:', result);
+			authLogger.log(
+				'DESKTOP-SIGNIN',
+				`[${flow}] Step 1 complete: AuthService.signIn() returned`,
+				{
+					success: result.success,
+					hasData: !!result.data,
+					message: result.success ? undefined : result.message,
+					elapsedMs: elapsed(),
+				},
+			);
 
 			if (!result.success) {
+				authLogger.warn(
+					'DESKTOP-SIGNIN',
+					`[${flow}] Sign-in failed at backend: ${result.message}`,
+				);
 				toast.error(result.message || 'Invalid email or password');
 				return;
 			}
 
 			if (!result.data) {
+				authLogger.error(
+					'DESKTOP-SIGNIN',
+					`[${flow}] No user data in result — backend returned success but no data`,
+				);
 				toast.error('Authentication failed: missing user data');
 				return;
 			}
 
-			const { accessToken, firstName, lastName, userType } = result.data;
-			console.log(
-				'Access token received in SignIn component:',
-				accessToken,
+			const { accessToken, refreshToken, firstName, lastName, userType } =
+				result.data;
+
+			authLogger.log(
+				'DESKTOP-SIGNIN',
+				`[${flow}] Step 1 data extracted`,
+				{
+					hasAccessToken: !!accessToken,
+					hasRefreshToken: !!refreshToken,
+					firstName: firstName || 'empty',
+					userType: userType || 'unknown',
+				},
 			);
 
 			if (!accessToken) {
+				authLogger.error(
+					'DESKTOP-SIGNIN',
+					`[${flow}] No access token in result.data — cannot proceed`,
+				);
 				toast.error('Authentication failed: missing token');
 				return;
 			}
 
-			localStorage.setItem('isce_auth_token', accessToken);
+			// Store tokens in httpOnly cookies via server route
+			authLogger.log(
+				'DESKTOP-SIGNIN',
+				`[${flow}] Step 2: Storing tokens via /api/auth/set-token`,
+				{
+					hasAccessToken: !!accessToken,
+					hasRefreshToken: !!refreshToken,
+				},
+			);
+			const setTokenRes = await csrfFetch('/api/auth/set-token', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ token: accessToken, refreshToken }),
+			});
+
+			let setTokenBody: any = null;
+			try {
+				setTokenBody = await setTokenRes.clone().json();
+			} catch {}
+
+			authLogger.log(
+				'DESKTOP-SIGNIN',
+				`[${flow}] Step 2 complete: set-token response`,
+				{
+					status: setTokenRes.status,
+					ok: setTokenRes.ok,
+					body: setTokenBody,
+					elapsedMs: elapsed(),
+				},
+			);
+
+			if (!setTokenRes.ok) {
+				authLogger.error(
+					'DESKTOP-SIGNIN',
+					`[${flow}] set-token failed — cookies not stored`,
+					{
+						status: setTokenRes.status,
+						body: setTokenBody,
+					},
+				);
+				toast.error(
+					'Failed to store authentication. Please try again.',
+				);
+				return;
+			}
 
 			toast.success(`Welcome back, ${firstName}!`);
 
 			const safe = getSafeRedirect(callbackUrl);
+			authLogger.log(
+				'DESKTOP-SIGNIN',
+				`[${flow}] Step 3: Redirect decision`,
+				{
+					callbackUrl: callbackUrl || 'none',
+					safeRedirect: safe || 'none',
+					willLaunch: !!(safe && accessToken),
+				},
+			);
 
 			if (safe && accessToken) {
-				const url = new URL(safe);
-				url.searchParams.set('token', accessToken);
-
-				window.location.href = url.toString();
+				// Use server-side launch to avoid exposing token to JS
+				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(safe)}`;
+				authLogger.log(
+					'DESKTOP-SIGNIN',
+					`[${flow}] Navigating to launch: ${launchUrl}`,
+				);
+				authLogger.log(
+					'DESKTOP-SIGNIN',
+					`[${flow}] === Sign-in flow complete (SSO launch) === totalMs=${elapsed()}`,
+				);
+				window.location.href = launchUrl;
 				return;
 			}
+			authLogger.log(
+				'DESKTOP-SIGNIN',
+				`[${flow}] No callback — pushing to /dashboard`,
+			);
+			authLogger.log(
+				'DESKTOP-SIGNIN',
+				`[${flow}] === Sign-in flow complete (dashboard) === totalMs=${elapsed()}`,
+			);
 			router.push('/dashboard');
 		} catch (error) {
+			authLogger.error(
+				'DESKTOP-SIGNIN',
+				`[${flow}] Unexpected error: ${error instanceof Error ? error.message : 'unknown'}`,
+				{
+					elapsedMs: elapsed(),
+					stack:
+						error instanceof Error ?
+							error.stack?.slice(0, 200)
+						:	undefined,
+				},
+			);
 			console.error('Sign in error:', error);
 			toast.error('Unexpected error occurred. Please try again.');
 		} finally {
@@ -210,6 +336,7 @@ export default function SignInClient({ callbackUrl }: Props) {
 				<div className='absolute bottom-8 flex space-x-2'>
 					{cardImages.map((_, idx) => (
 						<button
+							title='dots'
 							key={idx}
 							onClick={() => setCurrent(idx)}
 							className={`w-2.5 h-2.5 rounded-full transition-colors duration-300 ${
