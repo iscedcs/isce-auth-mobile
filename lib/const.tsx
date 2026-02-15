@@ -1,4 +1,6 @@
-export const AUTH_API = process.env.NEXT_PUBLIC_AUTH_API_URL;
+// Server-side: prefer internal Docker URL; client-side: falls back to NEXT_PUBLIC_
+export const AUTH_API =
+	process.env.AUTH_API_URL || process.env.NEXT_PUBLIC_AUTH_API_URL;
 
 export const URLS = {
 	auth: {
