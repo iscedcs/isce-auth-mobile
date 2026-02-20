@@ -24,6 +24,9 @@ export default function SignInClient({ callbackUrl }: Props) {
 		useState(false);
 	const singleProduct = useSearchParams();
 
+	// Pre-fill email if redirected from sign-up email check
+	const initialEmail = singleProduct.get('email') ?? '';
+
 	// Carousel State
 	const cardImages = [
 		'/images/BROWN.png',
@@ -369,8 +372,7 @@ export default function SignInClient({ callbackUrl }: Props) {
 							onForgotPassword={handleForgotPassword}
 							onGoogleSignIn={handleGoogleSignIn}
 							onAppleSignIn={handleAppleSignIn}
-							isLoading={isLoading}
-						/>
+							isLoading={isLoading}						initialEmail={initialEmail}						/>
 					</div>
 				</div>
 

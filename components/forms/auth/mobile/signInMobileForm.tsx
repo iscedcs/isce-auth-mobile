@@ -61,6 +61,15 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 	const prompt =
 		singleProduct.get('prompt') === 'login' ? '&prompt=login' : '';
 
+	// Pre-fill email from URL param (e.g. redirected from sign-up or sign-up email check)
+	useEffect(() => {
+		const urlEmail = singleProduct.get('email');
+		if (urlEmail) {
+			form.setValue('email', urlEmail);
+			setIsLoading(false);
+		}
+	}, [singleProduct, form]);
+
 	// /** -------------------------------------------
 	//  * 🧹 2. STORE SAFE REDIRECT
 	//  * ------------------------------------------*/
@@ -118,7 +127,7 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 				setStep(2);
 			} else {
 				// Email not registered — redirect to sign-up with email pre-filled
-				toast.info('No account found. Let\'s create one!');
+				toast.info("No account found. Let's create one!");
 				handleRedirectCreateAccount(email);
 			}
 		} catch {
@@ -324,7 +333,9 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 					<div className=' pt-6  flex gap-3 items-center'>
 						<GoArrowLeft
 							className=' w-8 h-8'
-							onClick={router.back}
+							onClick={() =>
+								step === 2 ? setStep(1) : router.back()
+							}
 						/>
 						{/* <p className=" text-[24px]  font-bold">Sign in to your account</p> */}
 					</div>

@@ -5,27 +5,48 @@ import IndividualSignUpForm from '@/components/forms/sign-up/individualSignUpFor
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { AuthService } from '@/lib/auth-service';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 import { userType } from '@/lib/types/auth';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { GoArrowLeft } from 'react-icons/go';
+import { MdEmail } from 'react-icons/md';
+import { TbLoader2 } from 'react-icons/tb';
+import { toast } from 'sonner';
 
 export default function SignUpMobile({
 	searchParams,
 }: {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+	const router = useRouter();
+	const singleProduct = useSearchParams();
+
+	// ─── Email pre-step state ────────────────────────────────────────────────
+	const [emailStep, setEmailStep] = useState(true);
+	const [preEmail, setPreEmail] = useState('');
+	const [emailLoading, setEmailLoading] = useState(false);
+
+	// ─── Account-type / form step state ─────────────────────────────────────
 	const [step, setStep] = useState(15);
 	const [business, setBusiness] = useState(false);
 	const [individual, setIndividual] = useState(true);
 	const [userType, setUserType] = useState<userType>('USER');
 	const [stepNumber, setStepNumber] = useState(1);
-	const singleProduct = useSearchParams();
+
+	// If an email was passed via URL param, pre-fill and skip the email step
+	useEffect(() => {
+		const urlEmail = singleProduct.get('email');
+		if (urlEmail) {
+			setPreEmail(urlEmail);
+			setEmailStep(false);
+		}
+	}, [singleProduct]);
 
 	const safe = useMemo(() => {
-		// NOTE: this component is client, so we can't await props directly.
-		// We’ll read from location.search here, and still work when server-passed.
 		try {
 			const sp = new URLSearchParams(window.location.search);
 			const raw =
@@ -46,23 +67,55 @@ export default function SignUpMobile({
 		const fromStorage = sessionStorage.getItem('redirect_hint');
 		return getSafeRedirect(fromStorage) || '/';
 	};
-	// useEffect(() => {
-	//   function maybeForceReauth() {
-	//     if (singleProduct.get("prompt") === "login") {
-	//       // Clear JWT token
-	//       localStorage.removeItem("isce_auth_token");
 
-	//       // Clear redirect hints used for SSO
-	//       sessionStorage.removeItem("redirect_hint");
+	// ─── Email step handler ──────────────────────────────────────────────────
+	const handleEmailContinue = async () => {
+		if (!preEmail.trim()) {
+			toast.error('Please enter your email address to continue.');
+			return;
+		}
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(preEmail.trim())) {
+			toast.error('Please enter a valid email address.');
+			return;
+		}
+		try {
+			setEmailLoading(true);
+			const { exists } = await AuthService.checkEmail(preEmail.trim());
+			if (exists) {
+				toast.error('Email already registered', {
+					description:
+						'An account with this email already exists. Redirecting you to sign in…',
+				});
+				router.push(
+					`/sign-in?email=${encodeURIComponent(preEmail.trim())}`,
+				);
+				return;
+			}
+			setEmailStep(false);
+		} catch {
+			toast.error('Something went wrong', {
+				description:
+					'Unable to check your email right now. Please try again.',
+			});
+		} finally {
+			setEmailLoading(false);
+		}
+	};
 
-	//       // Optionally clear custom cookies you may have set
-	//       document.cookie = "accessToken=; Max-Age=0; path=/;";
-	//     }
-	//   }
+	// ─── Progress helpers ────────────────────────────────────────────────────
+	// 8 total steps: email(1) + account type(2) + 6 form steps(3-8)
+	const totalSteps = 8;
+	const displayStepNumber =
+		emailStep ? 1
+		: step === 15 ? 2
+		: stepNumber + 1;
+	const progressValue =
+		emailStep ? (1 / totalSteps) * 100
+		: step === 15 ? (2 / totalSteps) * 100
+		: ((stepNumber + 1) / totalSteps) * 100;
 
-	//   maybeForceReauth();
-	// }, [singleProduct]);
-
+	// ─── Account-type handlers ───────────────────────────────────────────────
 	const handleBusiness = () => {
 		setBusiness(true);
 		setIndividual(false);
@@ -80,23 +133,74 @@ export default function SignUpMobile({
 		setStepNumber(stepNumber + 1);
 	};
 
+	// ─── Email pre-step UI ───────────────────────────────────────────────────
+	if (emailStep) {
+		return (
+			<div className='relative h-[100svh]'>
+				<p className='pt-[50px] text-[14px]'>Step 1 of {totalSteps}</p>
+				<div className='mt-2.5'>
+					<Progress
+						value={progressValue}
+						className='h-[3px]'
+					/>
+				</div>
+				<div className='mt-5'>
+					<GoArrowLeft
+						onClick={() => router.back()}
+						className='w-8 h-8 mb-4 cursor-pointer'
+					/>
+					<MdEmail className='w-8 h-8 mb-4' />
+					<p className='font-extrabold text-[24px] mb-1'>
+						{"What's your email?"}
+					</p>
+					<p className='text-[14px] text-muted-foreground mb-6'>
+						{"We'll check if you already have an account."}
+					</p>
+					<Input
+						type='email'
+						placeholder='Enter your email address'
+						value={preEmail}
+						onChange={(e) => setPreEmail(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === 'Enter') handleEmailContinue();
+						}}
+						className='rounded-[12px] py-[24px]'
+						disabled={emailLoading}
+					/>
+				</div>
+				<div className='absolute bottom-0 mb-[30px] w-full'>
+					<Button
+						onClick={handleEmailContinue}
+						disabled={emailLoading}
+						type='button'
+						className='w-full rounded-[12px] font-semibold py-[24px]'
+					>
+						{emailLoading ?
+							<TbLoader2 className='animate-spin w-5 h-5' />
+						:	'Continue'}
+					</Button>
+				</div>
+			</div>
+		);
+	}
+
+	// ─── Account-type + form steps UI ────────────────────────────────────────
 	return (
-		<div className=' relative h-[100svh]'>
-			<p className=' pt-[50px] text-[14px]'>
-				Step {stepNumber.toString()} of 7
+		<div className='relative h-[100svh]'>
+			<p className='pt-[50px] text-[14px]'>
+				Step {displayStepNumber} of {totalSteps}
 			</p>
-			<div className=' mt-2.5'>
+			<div className='mt-2.5'>
 				<Progress
-					value={step}
-					className=' h-[3px]'
+					value={progressValue}
+					className='h-[3px]'
 				/>
 			</div>
 
 			<div
 				className={`${step > 15 ? 'hidden' : 'inline'}  w-full flex flex-row`}
 			>
-				<div className='  absolute bottom-0 mb-[30px] w-full'>
-					{/* <p className=" text-center">{userType}</p> */}
+				<div className='absolute bottom-0 mb-[30px] w-full'>
 					<Button
 						onClick={handleNextStep}
 						type='button'
@@ -112,21 +216,26 @@ export default function SignUpMobile({
 						:	' hidden -translate-x-full '
 					} w-full flex justify-between transition-all flex-col`}
 				>
-					<div className=' mt-5 flex gap-5 flex-col'>
+					<div className='mt-5 flex gap-5 flex-col'>
+						{/* Back to email step */}
+						<GoArrowLeft
+							onClick={() => setEmailStep(true)}
+							className='w-8 h-8 cursor-pointer'
+						/>
 						<p className='font-extrabold text-[24px]'>
 							Select an account type
 						</p>
-						<div className=' flex flex-col gap-5'>
+						<div className='flex flex-col gap-5'>
 							<Card
 								className={` ${
 									individual ? ' border-[0.5]' : ' border-0'
 								} py-2.5 px-[15px] flex flex-row rounded-[12px]`}
 							>
-								<CardContent className=' '>
-									<p className=' font-bold text-white text-5'>
+								<CardContent className=''>
+									<p className='font-bold text-white text-5'>
 										Individual
 									</p>
-									<p className=' text-[14px] text-white'>
+									<p className='text-[14px] text-white'>
 										{`Create a personal account to manage your activities and
                     access exclusive features tailored just for you.`}
 									</p>
@@ -138,45 +247,11 @@ export default function SignUpMobile({
 									/>
 								</div>
 							</Card>
-							{/* <Card
-                className="py-2.5 px-[15px] flex flex-row rounded-[12px]
-  opacity-40 cursor-not-allowed pointer-events-none border-0">
-                <CardContent className="">
-                  <p className="font-bold text-white text-5">Business</p>
-                  <p className="text-[14px] text-white">
-                    {`Currently unavailable — coming soon.`}
-                  </p>
-                </CardContent>
-
-                <div className="">
-                  <Checkbox checked={false} disabled />
-                </div>
-              </Card> */}
-
-							{/* <Card
-                className={` ${
-                  business ? " border-[0.5]" : " border-0"
-                } py-2.5 px-[15px] flex flex-row rounded-[12px]`}>
-                <CardContent className=" ">
-                  <p className=" font-bold text-white text-5">Business</p>
-                  <p className=" text-[14px] text-white">
-                    {`Create a business account to manage your company's
-                    activities and access exclusive features tailored for
-                    businesses.`}
-                  </p>
-                </CardContent>
-                <div className="">
-                  <Checkbox
-                    checked={business}
-                    onClick={() => handleBusiness()}
-                  />
-                </div>
-              </Card> */}
 						</div>
 					</div>
 				</div>
 			</div>
-			<div className=' mt-5'>
+			<div className='mt-5'>
 				{userType === 'USER' ?
 					<IndividualSignUpForm
 						stepNumber={stepNumber}
@@ -184,6 +259,8 @@ export default function SignUpMobile({
 						step={step}
 						setStep={setStep}
 						getRedirect={getRedirect}
+						prefillEmail={preEmail}
+						onBackFromFirst={() => setStep(15)}
 					/>
 				: userType === 'BUSINESS_USER' ?
 					<BusinessSignUpForm />
@@ -193,6 +270,8 @@ export default function SignUpMobile({
 						step={step}
 						setStep={setStep}
 						getRedirect={getRedirect}
+						prefillEmail={preEmail}
+						onBackFromFirst={() => setStep(15)}
 					/>
 				}
 			</div>

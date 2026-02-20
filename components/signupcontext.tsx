@@ -11,7 +11,8 @@ import {
 	UserTypeFormData,
 } from '@/schemas/desktop';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2, Mail } from 'lucide-react';
+import { Input } from './ui/input';
 import { AuthLayout } from './forms/auth/auth-layout';
 import { AccountTypeForm } from './forms/auth/desktop/account-type-form';
 import { OtpVerificationForm } from './forms/auth/desktop/otp-verification-form';
@@ -40,6 +41,20 @@ export default function SignUpClient({ callbackUrl }: Props) {
 	const otpResendInFlightRef = useRef(false);
 	const singleProduct = useSearchParams();
 	const safe = getSafeRedirect(callbackUrl);
+
+	// ─── Email pre-step ────────────────────────────────────────────────────────
+	const [emailStep, setEmailStep] = useState(true);
+	const [preEmail, setPreEmail] = useState('');
+	const [emailLoading, setEmailLoading] = useState(false);
+
+	// Skip email step if ?email= is provided in the URL
+	useEffect(() => {
+		const urlEmail = singleProduct.get('email');
+		if (urlEmail) {
+			setPreEmail(urlEmail);
+			setEmailStep(false);
+		}
+	}, [singleProduct]);
 
 	useEffect(() => {
 		if (safe) sessionStorage.setItem('redirect_hint', safe);
@@ -272,9 +287,47 @@ export default function SignUpClient({ callbackUrl }: Props) {
 		}
 	};
 
+	const handleEmailContinue = async () => {
+		if (!preEmail.trim()) {
+			toast.error('Please enter your email address to continue.');
+			return;
+		}
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(preEmail.trim())) {
+			toast.error('Please enter a valid email address.');
+			return;
+		}
+		try {
+			setEmailLoading(true);
+			const { exists } = await AuthService.checkEmail(preEmail.trim());
+			if (exists) {
+				toast.error('Email already registered', {
+					description:
+						'An account with this email already exists. Redirecting you to sign in…',
+				});
+				router.push(
+					`/sign-in?email=${encodeURIComponent(preEmail.trim())}`,
+				);
+				return;
+			}
+			setEmailStep(false);
+		} catch {
+			toast.error('Something went wrong', {
+				description:
+					'Unable to check your email right now. Please try again.',
+			});
+		} finally {
+			setEmailLoading(false);
+		}
+	};
+
 	const handlePreviousStep = () => {
 		if (isLoading) return;
-		if (currentStep <= 1) return;
+		if (currentStep <= 1) {
+			// Back from account type → email pre-step
+			setEmailStep(true);
+			return;
+		}
 		setCurrentStep((prev) => Math.max(1, prev - 1));
 	};
 
@@ -312,7 +365,7 @@ export default function SignUpClient({ callbackUrl }: Props) {
 				return (
 					<UserDetailsForm
 						onSubmit={handleUserDetailsSubmit}
-						defaultValues={signupData.userDetails}
+						defaultValues={{ email: preEmail, ...signupData.userDetails }}
 						userType={selectedUserType || 'USER'}
 						isLoading={isLoading}
 					/>
@@ -341,14 +394,26 @@ export default function SignUpClient({ callbackUrl }: Props) {
 
 	return (
 		<AuthLayout
-			currentStep={currentStep}
-			totalSteps={4}
+			currentStep={emailStep ? 0 : currentStep}
+			totalSteps={5}
 			cardImages={cardImages}
 			currentSlide={current}
 			setCurrentSlide={setCurrent}
 		>
 			<div className='space-y-4'>
-				{currentStep > 1 && (
+				{/* Back button: on email step go to browser history; on form steps go back */}
+				{emailStep ? (
+					<Button
+						type='button'
+						variant='ghost'
+						size='sm'
+						onClick={() => router.back()}
+						className='px-0 text-gray-400 hover:text-white'
+					>
+						<ArrowLeft className='mr-2 h-4 w-4' />
+						Back
+					</Button>
+				) : (
 					<Button
 						type='button'
 						variant='ghost'
@@ -360,7 +425,44 @@ export default function SignUpClient({ callbackUrl }: Props) {
 						Back
 					</Button>
 				)}
-				{renderCurrentStep()}
+				{emailStep ? (
+					<div className='space-y-6'>
+						<div className='text-center'>
+							<Mail className='mx-auto mb-3 h-8 w-8 text-gray-400' />
+							<h2 className='text-2xl font-semibold text-white mb-1'>
+								{"What's your email?"}
+							</h2>
+							<p className='text-sm text-gray-400'>
+								{"We'll check if you already have an account."}
+							</p>
+						</div>
+						<Input
+							type='email'
+							placeholder='Enter your email address'
+							value={preEmail}
+							onChange={(e) => setPreEmail(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === 'Enter') handleEmailContinue();
+							}}
+							className='bg-transparent border-gray-600 text-white placeholder:text-gray-500'
+							disabled={emailLoading}
+						/>
+						<Button
+							type='button'
+							onClick={handleEmailContinue}
+							disabled={emailLoading}
+							className='w-full'
+						>
+							{emailLoading ? (
+								<Loader2 className='animate-spin h-4 w-4' />
+							) : (
+								'Continue'
+							)}
+						</Button>
+					</div>
+				) : (
+					renderCurrentStep()
+				)}
 			</div>
 			<PasswordResetModal
 				isOpen={isPasswordResetModalOpen}

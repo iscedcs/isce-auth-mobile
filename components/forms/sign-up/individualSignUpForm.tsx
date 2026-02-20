@@ -50,12 +50,16 @@ export default function IndividualSignUpForm({
 	setStep,
 	setStepNumber,
 	getRedirect,
+	prefillEmail,
+	onBackFromFirst,
 }: {
 	stepNumber: number;
 	setStepNumber: React.Dispatch<React.SetStateAction<number>>;
 	step: number;
 	setStep: React.Dispatch<React.SetStateAction<number>>;
 	getRedirect: () => string;
+	prefillEmail?: string;
+	onBackFromFirst?: () => void;
 }) {
 	const sp = useSearchParams();
 
@@ -110,6 +114,12 @@ export default function IndividualSignUpForm({
 	});
 
 	const email = form.watch('email');
+	// Pre-fill email from parent if provided (e.g. from email-first pre-step)
+	useEffect(() => {
+		if (prefillEmail) {
+			form.setValue('email', prefillEmail);
+		}
+	}, [prefillEmail, form]);
 	const otpWatch = otpForm.watch('otp');
 	const code = otpForm.getValues('otp');
 	const passwordValues = form.watch('passwordObj.password');
@@ -384,7 +394,11 @@ export default function IndividualSignUpForm({
 			return;
 		}
 
-		if (step <= 15 * 2) return; // nothing before first step
+		// At first form step (names) — go back to account type
+		if (step <= 15 * 2) {
+			if (onBackFromFirst) onBackFromFirst();
+			return;
+		}
 
 		const newStep = step - STEP_SIZE;
 		const newStepNumber = Math.max(2, stepNumber - 1);
@@ -717,7 +731,11 @@ export default function IndividualSignUpForm({
 							:	' hidden -translate-x-full  '
 						} hidden transition-all w-full mt-5`}
 					>
-						{/* No back arrow on first step */}
+						{/* Back to account type */}
+						<GoArrowLeft
+							onClick={handlePreviousStep}
+							className=' w-8 h-8 mb-4 cursor-pointer'
+						/>
 						<BiRename className=' w-8 h-8' />
 						<FormField
 							control={form.control}

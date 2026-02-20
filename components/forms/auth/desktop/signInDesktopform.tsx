@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,15 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { SignInFormData, signInSchema } from "@/schemas/desktop";
-import { appleIcon, googleIcon } from "@/lib/icons";
+
+interface SignInFormProps {
+  onSubmit: (data: SignInFormData) => void;
+  onForgotPassword: () => void;
+  onGoogleSignIn: () => void;
+  onAppleSignIn: () => void;
+  isLoading?: boolean;
+  initialEmail?: string;
+}
 
 export function DesktopSignInForm({
   onSubmit,
@@ -23,16 +31,22 @@ export function DesktopSignInForm({
   onGoogleSignIn,
   onAppleSignIn,
   isLoading = false,
+  initialEmail = '',
 }: SignInFormProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: initialEmail,
+      password: '',
     },
   });
+
+  // Sync if parent provides initialEmail after mount (e.g. from URL param)
+  useEffect(() => {
+    if (initialEmail) form.setValue('email', initialEmail);
+  }, [initialEmail, form]);
 
   return (
     <div className="space-y-6">
