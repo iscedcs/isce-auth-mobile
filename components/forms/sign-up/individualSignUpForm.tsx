@@ -464,6 +464,31 @@ export default function IndividualSignUpForm({
 		if (step === 15 * 4) {
 			const valid = await stepGuard(15 * 4);
 			if (!valid) return;
+
+			// Check if phone is already registered before proceeding
+			const phone = form.getValues('phoneNumber');
+			setIsLoading(true);
+			try {
+				const { exists } = await AuthService.checkPhone(phone);
+				if (exists) {
+					toast.error('Phone number already registered', {
+						description:
+							'An account with this phone number already exists. Please use a different number or sign in.',
+					});
+					form.setError('phoneNumber', {
+						type: 'manual',
+						message:
+							'This phone number is already linked to an existing account.',
+					});
+					setIsLoading(false);
+					return;
+				}
+			} catch {
+				// If check fails, allow proceeding
+			} finally {
+				setIsLoading(false);
+			}
+
 			goToStep(15 * 5, 5);
 			return;
 		}

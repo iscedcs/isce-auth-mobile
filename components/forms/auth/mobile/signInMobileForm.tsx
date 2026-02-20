@@ -88,16 +88,44 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 			`/sign-up?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
 		:	`/sign-up${prompt}`;
 
-	const handleRedirectCreateAccount = () => {
-		router.push(signUpHref);
+	const handleRedirectCreateAccount = (email?: string) => {
+		if (email) {
+			const base =
+				callbackUrl ?
+					`/sign-up?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
+				:	`/sign-up${prompt ? '?' + prompt.slice(1) : ''}`;
+			const url = `${base}${base.includes('?') ? '&' : '?'}email=${encodeURIComponent(email)}`;
+			router.push(url);
+		} else {
+			router.push(signUpHref);
+		}
 	};
 
 	const handleDisplayPassword = () => {
 		setPassword((password) => !password);
 	};
 
-	const handleNextStep = () => {
-		setStep(step + 1);
+	const handleNextStep = async () => {
+		// Validate email field before proceeding
+		const isValid = await form.trigger('email');
+		if (!isValid) return;
+
+		const email = form.getValues('email');
+		setIsLoading(true);
+		try {
+			const { exists } = await AuthService.checkEmail(email);
+			if (exists) {
+				setStep(2);
+			} else {
+				// Email not registered — redirect to sign-up with email pre-filled
+				toast.info('No account found. Let\'s create one!');
+				handleRedirectCreateAccount(email);
+			}
+		} catch {
+			toast.error('Something went wrong. Please try again.');
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const handleSubmit = async (data: signInValues) => {
@@ -384,7 +412,9 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 								disabled={loading}
 								className='  w-full rounded-[12px] font-semibold py-[24px] '
 							>
-								Continue
+								{loading ?
+									<TbLoader2 className=' w-[22px] h-[22px] animate-spin' />
+								:	'Continue'}
 							</Button>
 						:	<Button
 								type='submit'

@@ -6,6 +6,8 @@ export const URLS = {
 	auth: {
 		sign_up: '/auth/signup',
 		sign_in: '/auth/signin',
+		check_email: '/auth/check-email',
+		check_phone: '/auth/check-phone',
 		quick_register: '/auth/signupUser',
 		sign_out: '/auth/signout',
 		reset_token: '/auth/send-reset-token',

@@ -215,6 +215,45 @@ export class AuthService {
 	}
 	private static baseUrl = AUTH_API;
 
+	/** ---------------------------------------------------------
+	 * CHECK IF EMAIL IS REGISTERED
+	 * Returns { exists: true } if the email has an account,
+	 * { exists: false } otherwise.
+	---------------------------------------------------------*/
+	static async checkEmail(email: string): Promise<{ exists: boolean }> {
+		const url = `${this.baseUrl}${URLS.auth.check_email}`;
+		try {
+			const response = await axios.post(
+				url,
+				{ email: email.toLowerCase().trim() },
+				{ timeout: 8000, headers: { 'Content-Type': 'application/json' } },
+			);
+			return { exists: !!(response.data?.data?.exists) };
+		} catch {
+			// On network error, assume email might exist to avoid blocking login
+			return { exists: true };
+		}
+	}
+
+	/** ---------------------------------------------------------
+	 * CHECK IF PHONE IS REGISTERED
+	 * Returns { exists: true } if the phone has an account.
+	---------------------------------------------------------*/
+	static async checkPhone(phone: string): Promise<{ exists: boolean }> {
+		const url = `${this.baseUrl}${URLS.auth.check_phone}`;
+		try {
+			const response = await axios.post(
+				url,
+				{ phone: phone.trim() },
+				{ timeout: 8000, headers: { 'Content-Type': 'application/json' } },
+			);
+			return { exists: !!(response.data?.data?.exists) };
+		} catch {
+			// On network error, allow proceeding
+			return { exists: false };
+		}
+	}
+
 	static async quickRegister(payload: {
 		firstName: string;
 		lastName: string;
