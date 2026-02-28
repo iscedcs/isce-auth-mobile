@@ -12,6 +12,7 @@ import {
 	Wallet,
 	LogOut,
 	User,
+	Shield,
 } from 'lucide-react';
 import { getRedirect } from '@/lib/auth-flow';
 import { getSafeRedirect } from '@/lib/safe-redirect';
@@ -100,6 +101,30 @@ export default function DashboardPage() {
 			</div>
 
 			<h1 className='text-3xl font-bold mb-2'>ISCE Products</h1>
+
+			{/* Super Admin Banner */}
+			{user?.userType === 'SUPER_ADMIN' && (
+				<a
+					href='/superadmin'
+					className='mb-4 flex items-center gap-3 p-4 border border-red-500/20 bg-red-500/5 rounded-xl hover:bg-red-500/10 transition group'
+				>
+					<div className='w-9 h-9 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center'>
+						<Shield className='w-4 h-4 text-red-400' />
+					</div>
+					<div className='flex-1'>
+						<p className='font-medium text-sm text-red-300'>
+							Super Admin Panel
+						</p>
+						<p className='text-xs text-white/40'>
+							System overview, user management &amp; global
+							settings
+						</p>
+					</div>
+					<span className='text-white/30 group-hover:text-white/60 transition text-sm'>
+						→
+					</span>
+				</a>
+			)}
 			<p className='text-white/60 mb-2'>
 				You’re signed in to your ISCE account. Choose where you want to
 				continue.
