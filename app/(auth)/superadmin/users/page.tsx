@@ -3,6 +3,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Search, ChevronLeft, ChevronRight, UserX, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 
 interface UserRecord {
 	id: string;
@@ -119,19 +126,26 @@ export default function SuperAdminUsersPage() {
 						className='w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 transition'
 					/>
 				</div>
-				<select
-					aria-label='Filter by user type'
-					value={filterType}
-					onChange={(e) => setFilterType(e.target.value)}
-					className='bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white/30 transition appearance-none cursor-pointer'
+				<Select
+					value={filterType || 'ALL'}
+					onValueChange={(value) =>
+						setFilterType(value === 'ALL' ? '' : value)
+					}
 				>
-					<option value=''>All Types</option>
-					<option value='USER'>User</option>
-					<option value='BUSINESS_USER'>Business User</option>
-					<option value='ADMIN'>Admin</option>
-					<option value='SUPER_ADMIN'>Super Admin</option>
-					<option value='EMPLOYEE'>Employee</option>
-				</select>
+					<SelectTrigger className='w-[160px] bg-white/5 border-white/10 rounded-xl text-sm text-white h-[42px]'>
+						<SelectValue placeholder='All Types' />
+					</SelectTrigger>
+					<SelectContent className='bg-zinc-900 border-white/10'>
+						<SelectItem value='ALL'>All Types</SelectItem>
+						<SelectItem value='USER'>User</SelectItem>
+						<SelectItem value='BUSINESS_USER'>
+							Business User
+						</SelectItem>
+						<SelectItem value='ADMIN'>Admin</SelectItem>
+						<SelectItem value='SUPER_ADMIN'>Super Admin</SelectItem>
+						<SelectItem value='EMPLOYEE'>Employee</SelectItem>
+					</SelectContent>
+				</Select>
 			</div>
 
 			{/* Users Table */}
