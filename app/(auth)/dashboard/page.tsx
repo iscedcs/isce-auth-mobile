@@ -13,9 +13,11 @@ import {
 	LogOut,
 	User,
 	Shield,
+	Trash2,
 } from 'lucide-react';
 import { getRedirect } from '@/lib/auth-flow';
 import { getSafeRedirect } from '@/lib/safe-redirect';
+import { DeleteAccountDialog } from '@/components/forms/delete-account-dialog';
 
 const ICON_MAP: any = {
 	contact: Contact,
@@ -37,6 +39,7 @@ interface SessionUser {
 export default function DashboardPage() {
 	const router = useRouter();
 	const [user, setUser] = useState<SessionUser | null>(null);
+	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
 	useEffect(() => {
 		async function checkSession() {
@@ -168,6 +171,22 @@ export default function DashboardPage() {
 					);
 				})}
 			</div>
+
+			{/* Delete Account */}
+			<div className='mt-10 pt-6 border-t border-white/10'>
+				<button
+					onClick={() => setShowDeleteDialog(true)}
+					className='flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition'
+				>
+					<Trash2 className='w-4 h-4' />
+					Delete my account
+				</button>
+			</div>
+
+			<DeleteAccountDialog
+				open={showDeleteDialog}
+				onOpenChange={setShowDeleteDialog}
+			/>
 
 			{/* Footer */}
 			<div className='mt-auto pt-10 text-center text-white/40 text-sm'>
