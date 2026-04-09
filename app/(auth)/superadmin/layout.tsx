@@ -4,30 +4,36 @@ import { useSuperAdmin } from '@/hooks/use-superadmin';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-	LayoutDashboard,
-	Users,
-	Settings,
-	LogOut,
-	Shield,
-	ChevronLeft,
-} from 'lucide-react';
+  LayoutDashboard,
+  Users,
+  Settings,
+  LogOut,
+  Shield,
+  ChevronLeft,
+  CreditCard,
+} from "lucide-react";
 
 const NAV_ITEMS = [
-	{
-		label: 'Overview',
-		href: '/superadmin',
-		icon: LayoutDashboard,
-	},
-	{
-		label: 'Users',
-		href: '/superadmin/users',
-		icon: Users,
-	},
-	{
-		label: 'Settings',
-		href: '/superadmin/settings',
-		icon: Settings,
-	},
+  {
+    label: "Overview",
+    href: "/superadmin",
+    icon: LayoutDashboard,
+  },
+  {
+    label: "Users",
+    href: "/superadmin/users",
+    icon: Users,
+  },
+  {
+    label: "Devices",
+    href: "/superadmin/devices",
+    icon: CreditCard,
+  },
+  {
+    label: "Settings",
+    href: "/superadmin/settings",
+    icon: Settings,
+  },
 ];
 
 export default function SuperAdminLayout({
