@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import {
@@ -14,6 +15,7 @@ import {
 	ArrowUpDown,
 	Filter,
 	ChevronDown,
+	QrCode,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { csrfFetch } from '@/lib/csrf-client';
@@ -277,12 +279,21 @@ export default function SuperAdminDevicesPage() {
 
 	return (
 		<div className='p-4 sm:p-6 lg:p-8 max-w-6xl'>
-			<div className='mb-6 sm:mb-8'>
-				<h1 className='text-xl sm:text-2xl font-bold mb-1'>Device Management</h1>
-				<p className='text-white/50 text-sm'>
-					View and manage NFC cards, wristbands, and stickers across
-					all users
-				</p>
+			<div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+				<div>
+					<h1 className="text-xl sm:text-2xl font-bold mb-1">Device Management</h1>
+					<p className="text-white/50 text-sm">
+						View and manage NFC cards, wristbands, and stickers across
+						all users
+					</p>
+				</div>
+				<Link
+					href="/superadmin/devices/assign"
+					className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-xl transition shrink-0"
+				>
+					<QrCode className="w-4 h-4" />
+					Assign Device
+				</Link>
 			</div>
 
 			{/* Search & Filters */}
