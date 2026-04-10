@@ -8,6 +8,10 @@ import {
   Briefcase,
   Shield,
   Activity,
+  QrCode,
+  CreditCard,
+  ArrowRightLeft,
+  Search,
 } from "lucide-react";
 
 interface StatsData {
@@ -252,6 +256,46 @@ export default function SuperAdminOverviewPage() {
             <p className="font-medium mb-1">Manage Users</p>
             <p className="text-sm text-white/40">
               View, search, and manage all ecosystem users
+            </p>
+          </a>
+          <a
+            href="/superadmin/devices/assign"
+            className="border border-white/10 rounded-xl p-5 bg-white/[0.02] hover:bg-white/[0.05] transition group"
+          >
+            <QrCode className="w-6 h-6 text-white/40 group-hover:text-white/70 mb-3 transition" />
+            <p className="font-medium mb-1">Assign Device</p>
+            <p className="text-sm text-white/40">
+              Scan QR or enter ID to assign NFC devices to users
+            </p>
+          </a>
+          <a
+            href="/superadmin/devices"
+            className="border border-white/10 rounded-xl p-5 bg-white/[0.02] hover:bg-white/[0.05] transition group"
+          >
+            <CreditCard className="w-6 h-6 text-white/40 group-hover:text-white/70 mb-3 transition" />
+            <p className="font-medium mb-1">Manage Devices</p>
+            <p className="text-sm text-white/40">
+              View all NFC cards, wristbands, and stickers
+            </p>
+          </a>
+          <a
+            href="/superadmin/devices?assigned=false"
+            className="border border-white/10 rounded-xl p-5 bg-white/[0.02] hover:bg-white/[0.05] transition group"
+          >
+            <Search className="w-6 h-6 text-white/40 group-hover:text-white/70 mb-3 transition" />
+            <p className="font-medium mb-1">Unassigned Devices</p>
+            <p className="text-sm text-white/40">
+              View devices waiting to be assigned to users
+            </p>
+          </a>
+          <a
+            href="/superadmin/devices?assigned=true"
+            className="border border-white/10 rounded-xl p-5 bg-white/[0.02] hover:bg-white/[0.05] transition group"
+          >
+            <ArrowRightLeft className="w-6 h-6 text-white/40 group-hover:text-white/70 mb-3 transition" />
+            <p className="font-medium mb-1">Reassign Device</p>
+            <p className="text-sm text-white/40">
+              View assigned devices for potential reassignment
             </p>
           </a>
           <a
