@@ -276,9 +276,9 @@ export default function SuperAdminDevicesPage() {
 	};
 
 	return (
-		<div className='p-8 max-w-6xl'>
-			<div className='mb-8'>
-				<h1 className='text-2xl font-bold mb-1'>Device Management</h1>
+		<div className='p-4 sm:p-6 lg:p-8 max-w-6xl'>
+			<div className='mb-6 sm:mb-8'>
+				<h1 className='text-xl sm:text-2xl font-bold mb-1'>Device Management</h1>
 				<p className='text-white/50 text-sm'>
 					View and manage NFC cards, wristbands, and stickers across
 					all users
@@ -431,7 +431,7 @@ export default function SuperAdminDevicesPage() {
 								</th>
 								<th
 									onClick={() => toggleSort('isPrimary')}
-									className='text-left text-xs font-medium text-white/40 px-4 py-3 uppercase tracking-wider cursor-pointer hover:text-white/60 transition select-none'
+									className='hidden sm:table-cell text-left text-xs font-medium text-white/40 px-4 py-3 uppercase tracking-wider cursor-pointer hover:text-white/60 transition select-none'
 								>
 									<span className='inline-flex items-center gap-1'>
 										Primary
@@ -440,7 +440,7 @@ export default function SuperAdminDevicesPage() {
 								</th>
 								<th
 									onClick={() => toggleSort('assignedAt')}
-									className='text-left text-xs font-medium text-white/40 px-4 py-3 uppercase tracking-wider cursor-pointer hover:text-white/60 transition select-none'
+									className='hidden md:table-cell text-left text-xs font-medium text-white/40 px-4 py-3 uppercase tracking-wider cursor-pointer hover:text-white/60 transition select-none'
 								>
 									<span className='inline-flex items-center gap-1'>
 										Assigned
@@ -543,7 +543,7 @@ export default function SuperAdminDevicesPage() {
 													</span>
 												)}
 											</td>
-											<td className='px-4 py-3'>
+											<td className='hidden sm:table-cell px-4 py-3'>
 												{device.isPrimary ? (
 													<Badge
 														variant='outline'
@@ -557,7 +557,7 @@ export default function SuperAdminDevicesPage() {
 													</span>
 												)}
 											</td>
-											<td className='px-4 py-3 text-sm text-white/50'>
+											<td className='hidden md:table-cell px-4 py-3 text-sm text-white/50'>
 												{formatDate(
 													device.assignedAt ||
 														device.createdAt,
@@ -592,7 +592,7 @@ export default function SuperAdminDevicesPage() {
 			</div>
 
 			{/* Pagination */}
-			<div className='flex items-center justify-between mt-4'>
+			<div className='flex flex-col sm:flex-row items-center justify-between gap-3 mt-4'>
 				<p className='text-sm text-white/40'>
 					Page {page} of {totalPages}
 					{total > 0 && ` · ${total} total`}
@@ -604,14 +604,14 @@ export default function SuperAdminDevicesPage() {
 						className='flex items-center gap-1 px-3 py-1.5 text-sm border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition'
 					>
 						<ChevronLeft className='w-4 h-4' />
-						Previous
+						<span className='hidden sm:inline'>Previous</span>
 					</button>
 					<button
 						onClick={() => setPage((p) => p + 1)}
 						disabled={page >= totalPages}
 						className='flex items-center gap-1 px-3 py-1.5 text-sm border border-white/10 rounded-lg hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition'
 					>
-						Next
+						<span className='hidden sm:inline'>Next</span>
 						<ChevronRight className='w-4 h-4' />
 					</button>
 				</div>
