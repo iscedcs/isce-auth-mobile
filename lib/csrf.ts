@@ -8,6 +8,7 @@ const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 /** Paths exempt from CSRF validation */
 const EXEMPT_PATHS = [
 	'/api/auth/set-token', // Called from same-origin redirects
+	'/api/admin/', // Admin API routes — protected by JWT auth on backend
 ];
 
 /**

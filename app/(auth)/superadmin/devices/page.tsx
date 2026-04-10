@@ -624,16 +624,17 @@ export default function SuperAdminDevicesPage() {
 					onClick={() => setReassignDevice(null)}
 				>
 					<div
-						className='bg-zinc-900 border border-white/10 rounded-2xl p-6 max-w-md w-full mx-4'
+						className='bg-zinc-900 border border-white/10 rounded-2xl p-4 sm:p-6 max-w-md w-full mx-3 sm:mx-4 max-h-[90vh] overflow-y-auto'
 						onClick={(e) => e.stopPropagation()}
 					>
-						<div className='flex items-center justify-between mb-6'>
-							<div className='flex items-center gap-3'>
-								<div className='w-10 h-10 rounded-full bg-blue-500/15 border border-blue-500/30 flex items-center justify-center'>
-									<ArrowRightLeft className='w-5 h-5 text-blue-400' />
+						{/* Modal Header */}
+						<div className='flex items-center justify-between mb-5 sm:mb-6'>
+							<div className='flex items-center gap-2.5 sm:gap-3'>
+								<div className='w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-500/15 border border-blue-500/30 flex items-center justify-center shrink-0'>
+									<ArrowRightLeft className='w-4 h-4 sm:w-5 sm:h-5 text-blue-400' />
 								</div>
 								<div>
-									<h3 className='font-semibold text-lg'>
+									<h3 className='font-semibold text-base sm:text-lg'>
 										Reassign Device
 									</h3>
 									<p className='text-xs text-white/40'>
@@ -641,8 +642,8 @@ export default function SuperAdminDevicesPage() {
 									</p>
 								</div>
 							</div>
-                            <button
-                                title='close'
+							<button
+								title='Close'
 								onClick={() => setReassignDevice(null)}
 								className='text-white/30 hover:text-white/60 transition'
 							>
@@ -651,31 +652,59 @@ export default function SuperAdminDevicesPage() {
 						</div>
 
 						{/* Device info */}
-						<div className='bg-white/5 border border-white/10 rounded-xl p-4 mb-4 space-y-2'>
-							<div className='flex justify-between text-sm'>
-								<span className='text-white/40'>
+						<div className='bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 mb-4 space-y-3'>
+							<div>
+								<span className='text-xs text-white/40 block mb-1'>
 									Product ID
 								</span>
-								<code className='text-xs text-white/70'>
+								<code className='text-xs text-white/70 font-mono break-all bg-white/5 px-2 py-1 rounded-md inline-block max-w-full'>
 									{reassignDevice.productId}
 								</code>
 							</div>
-							<div className='flex justify-between text-sm'>
+							<div className='flex items-center justify-between text-sm'>
 								<span className='text-white/40'>Type</span>
-								<span>
+								<span className='text-xs bg-white/5 border border-white/15 px-2 py-0.5 rounded-md'>
 									{getDeviceTypeLabel(reassignDevice.type)}
 								</span>
 							</div>
-							<div className='flex justify-between text-sm'>
-								<span className='text-white/40'>
+							<div>
+								<span className='text-xs text-white/40 block mb-1.5'>
 									Current Owner
 								</span>
-								<span>
-									{reassignDevice.user
-										? reassignDevice.user.email
-										: reassignDevice.userId.slice(0, 12) +
-											'…'}
-								</span>
+								<div className='flex items-center gap-2'>
+									{reassignDevice.user?.displayPicture ? (
+										<Image
+											src={
+												reassignDevice.user
+													.displayPicture
+											}
+											alt=''
+											width={28}
+											height={28}
+											className='w-7 h-7 rounded-full object-cover shrink-0'
+										/>
+									) : (
+										<div className='w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0'>
+											<UserIcon className='w-3.5 h-3.5 text-white/30' />
+										</div>
+									)}
+									<div className='min-w-0 flex-1'>
+										<p className='text-sm font-medium truncate'>
+											{reassignDevice.user
+												? `${reassignDevice.user.firstName ?? ''} ${reassignDevice.user.lastName ?? ''}`.trim() ||
+													reassignDevice.user.email
+												: reassignDevice.userId.slice(
+														0,
+														12,
+													) + '…'}
+										</p>
+										{reassignDevice.user?.email && (
+											<p className='text-xs text-white/40 truncate'>
+												{reassignDevice.user.email}
+											</p>
+										)}
+									</div>
+								</div>
 							</div>
 						</div>
 
@@ -772,8 +801,8 @@ export default function SuperAdminDevicesPage() {
 											{selectedUser.email}
 										</p>
 									</div>
-                                    <button
-                                        title='close'
+									<button
+										title='Remove selection'
 										type='button'
 										onClick={() => {
 											setSelectedUser(null);
@@ -789,18 +818,18 @@ export default function SuperAdminDevicesPage() {
 
 						{/* Error / Success */}
 						{reassignError && (
-							<div className='mb-4 px-4 py-2.5 bg-red-500/15 border border-red-500/30 rounded-xl text-sm text-red-300'>
+							<div className='mb-4 px-3 sm:px-4 py-2.5 bg-red-500/15 border border-red-500/30 rounded-xl text-sm text-red-300'>
 								{reassignError}
 							</div>
 						)}
 						{reassignSuccess && (
-							<div className='mb-4 px-4 py-2.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-sm text-emerald-300'>
+							<div className='mb-4 px-3 sm:px-4 py-2.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-sm text-emerald-300'>
 								{reassignSuccess}
 							</div>
 						)}
 
 						{/* Actions */}
-						<div className='flex gap-3'>
+						<div className='flex gap-2.5 sm:gap-3'>
 							<button
 								onClick={() => setReassignDevice(null)}
 								className='flex-1 px-4 py-2.5 text-sm border border-white/10 rounded-xl hover:bg-white/5 transition'
@@ -809,9 +838,7 @@ export default function SuperAdminDevicesPage() {
 							</button>
 							<button
 								onClick={handleReassign}
-								disabled={
-									!selectedUser || reassigning
-								}
+								disabled={!selectedUser || reassigning}
 								className='flex-1 px-4 py-2.5 text-sm bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-medium transition flex items-center justify-center gap-2'
 							>
 								{reassigning && (
