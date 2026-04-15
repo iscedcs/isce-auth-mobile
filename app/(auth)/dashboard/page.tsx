@@ -1,197 +1,204 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { PRODUCTS } from '@/lib/products';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { PRODUCTS } from "@/lib/products";
 import {
-	Calendar,
-	ShoppingBag,
-	Contact,
-	Briefcase,
-	Wallet,
-	LogOut,
-	User,
-	Shield,
-	Trash2,
-} from 'lucide-react';
-import { getRedirect } from '@/lib/auth-flow';
-import { getSafeRedirect } from '@/lib/safe-redirect';
-import { DeleteAccountDialog } from '@/components/forms/delete-account-dialog';
+  Calendar,
+  ShoppingBag,
+  Contact,
+  Briefcase,
+  Wallet,
+  LogOut,
+  User,
+  Shield,
+  Trash2,
+  KeyRound,
+} from "lucide-react";
+import { getRedirect } from "@/lib/auth-flow";
+import { getSafeRedirect } from "@/lib/safe-redirect";
+import { DeleteAccountDialog } from "@/components/forms/delete-account-dialog";
 
 const ICON_MAP: any = {
-	contact: Contact,
-	briefcase: Briefcase,
-	calendar: Calendar,
-	'shopping-bag': ShoppingBag,
-	wallet: Wallet,
+  contact: Contact,
+  briefcase: Briefcase,
+  calendar: Calendar,
+  "shopping-bag": ShoppingBag,
+  wallet: Wallet,
 };
 
 interface SessionUser {
-	id: string;
-	email: string;
-	firstName?: string;
-	lastName?: string;
-	displayPicture?: string;
-	userType?: string;
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  displayPicture?: string;
+  userType?: string;
 }
 
 export default function DashboardPage() {
-	const router = useRouter();
-	const [user, setUser] = useState<SessionUser | null>(null);
-	const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const router = useRouter();
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-	useEffect(() => {
-		async function checkSession() {
-			try {
-				const res = await fetch('/api/auth/session');
-				if (!res.ok) {
-					router.replace('/sign-in');
-					return;
-				}
-				const data = await res.json();
-				if (!data.authenticated) {
-					router.replace('/sign-in');
-					return;
-				}
-				setUser(data.user);
-			} catch {
-				router.replace('/sign-in');
-			}
-		}
-		checkSession();
-	}, [router]);
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (!res.ok) {
+          router.replace("/sign-in");
+          return;
+        }
+        const data = await res.json();
+        if (!data.authenticated) {
+          router.replace("/sign-in");
+          return;
+        }
+        setUser(data.user);
+      } catch {
+        router.replace("/sign-in");
+      }
+    }
+    checkSession();
+  }, [router]);
 
-	const handleLaunch = (product: any) => {
-		if (!product.active || !user) return;
+  const handleLaunch = (product: any) => {
+    if (!product.active || !user) return;
 
-		const safe = getSafeRedirect(getRedirect()) || '/';
+    const safe = getSafeRedirect(getRedirect()) || "/";
 
-		// Use server-side launch to avoid exposing token to JS
-		const launchUrl = `/api/auth/launch?url=${encodeURIComponent(product.url)}&redirect=${encodeURIComponent(safe)}`;
-		window.location.href = launchUrl;
-	};
+    // Use server-side launch to avoid exposing token to JS
+    const launchUrl = `/api/auth/launch?url=${encodeURIComponent(product.url)}&redirect=${encodeURIComponent(safe)}`;
+    window.location.href = launchUrl;
+  };
 
-	const handleLogout = async () => {
-		await fetch('/api/logout', { method: 'POST' });
-		router.replace('/sign-in?prompt=login');
-	};
+  const handleLogout = async () => {
+    await fetch("/api/logout", { method: "POST" });
+    router.replace("/sign-in?prompt=login");
+  };
 
-	const fullName =
-		user?.firstName || user?.lastName ?
-			`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim()
-		:	'ISCE User';
+  const fullName =
+    user?.firstName || user?.lastName
+      ? `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim()
+      : "ISCE User";
 
-	return (
-		<div className='min-h-screen bg-black text-white p-6 flex flex-col'>
-			{/* Header */}
-			<div className='flex items-center justify-between mb-6'>
-				<div className='flex items-center gap-3'>
-					<User className='w-10 h-10 text-white/70' />
-					<div>
-						<p className='font-semibold text-lg'>{fullName}</p>
-						<p className='text-sm text-white/50'>{user?.email}</p>
-					</div>
-				</div>
+  return (
+    <div className="min-h-screen bg-black text-white p-6 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <User className="w-10 h-10 text-white/70" />
+          <div>
+            <p className="font-semibold text-lg">{fullName}</p>
+            <p className="text-sm text-white/50">{user?.email}</p>
+          </div>
+        </div>
 
-				<button
-					onClick={handleLogout}
-					className='flex items-center gap-2 border px-3 py-2 rounded-lg border-white/20 hover:bg-white/10 transition'
-				>
-					<LogOut className='w-4 h-4' />
-					Logout
-				</button>
-			</div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 border px-3 py-2 rounded-lg border-white/20 hover:bg-white/10 transition"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
+      </div>
 
-			<h1 className='text-3xl font-bold mb-2'>ISCE Products</h1>
+      <h1 className="text-3xl font-bold mb-2">ISCE Products</h1>
 
-			{/* Super Admin Banner */}
-			{user?.userType === 'SUPER_ADMIN' && (
-				<a
-					href='/superadmin'
-					className='mb-4 flex items-center gap-3 p-4 border border-red-500/20 bg-red-500/5 rounded-xl hover:bg-red-500/10 transition group'
-				>
-					<div className='w-9 h-9 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center'>
-						<Shield className='w-4 h-4 text-red-400' />
-					</div>
-					<div className='flex-1'>
-						<p className='font-medium text-sm text-red-300'>
-							Super Admin Panel
-						</p>
-						<p className='text-xs text-white/40'>
-							System overview, user management &amp; global
-							settings
-						</p>
-					</div>
-					<span className='text-white/30 group-hover:text-white/60 transition text-sm'>
-						→
-					</span>
-				</a>
-			)}
-			<p className='text-white/60 mb-2'>
-				You’re signed in to your ISCE account. Choose where you want to
-				continue.
-			</p>
-			<p className='text-xs text-white/40 mb-8'>
-				Clicking a product will open it and pass your secure access
-				token so you don’t have to log in again.
-			</p>
+      {/* Super Admin Banner */}
+      {user?.userType === "SUPER_ADMIN" && (
+        <a
+          href="/superadmin"
+          className="mb-4 flex items-center gap-3 p-4 border border-red-500/20 bg-red-500/5 rounded-xl hover:bg-red-500/10 transition group"
+        >
+          <div className="w-9 h-9 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+            <Shield className="w-4 h-4 text-red-400" />
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-sm text-red-300">
+              Super Admin Panel
+            </p>
+            <p className="text-xs text-white/40">
+              System overview, user management &amp; global settings
+            </p>
+          </div>
+          <span className="text-white/30 group-hover:text-white/60 transition text-sm">
+            →
+          </span>
+        </a>
+      )}
+      <p className="text-white/60 mb-2">
+        You’re signed in to your ISCE account. Choose where you want to
+        continue.
+      </p>
+      <p className="text-xs text-white/40 mb-8">
+        Clicking a product will open it and pass your secure access token so you
+        don’t have to log in again.
+      </p>
 
-			{/* Product Grid */}
-			<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-				{PRODUCTS.map((item) => {
-					const Icon = ICON_MAP[item.icon];
+      {/* Product Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {PRODUCTS.map((item) => {
+          const Icon = ICON_MAP[item.icon];
 
-					return (
-						<motion.div
-							key={item.id}
-							whileHover={{ scale: item.active ? 1.03 : 1 }}
-							whileTap={{ scale: item.active ? 0.98 : 1 }}
-							onClick={() => handleLaunch(item)}
-							className={`p-6 border rounded-xl bg-white/5 backdrop-blur-md cursor-pointer transition group
+          return (
+            <motion.div
+              key={item.id}
+              whileHover={{ scale: item.active ? 1.03 : 1 }}
+              whileTap={{ scale: item.active ? 0.98 : 1 }}
+              onClick={() => handleLaunch(item)}
+              className={`p-6 border rounded-xl bg-white/5 backdrop-blur-md cursor-pointer transition group
                 ${
-					item.active ?
-						'border-white/20 hover:border-white/40'
-					:	'border-white/10 opacity-40 cursor-not-allowed'
-				}
+                  item.active
+                    ? "border-white/20 hover:border-white/40"
+                    : "border-white/10 opacity-40 cursor-not-allowed"
+                }
               `}
-						>
-							<Icon
-								className={`w-10 h-10 mb-4 ${
-									item.active ? 'text-white' : 'text-white/40'
-								}`}
-							/>
-							<p className='font-semibold text-lg'>{item.name}</p>
-							<p className='text-white/40 text-sm mt-1'>
-								{item.active ?
-									'Open product'
-								:	'Coming soon — not yet available'}
-							</p>
-						</motion.div>
-					);
-				})}
-			</div>
+            >
+              <Icon
+                className={`w-10 h-10 mb-4 ${
+                  item.active ? "text-white" : "text-white/40"
+                }`}
+              />
+              <p className="font-semibold text-lg">{item.name}</p>
+              <p className="text-white/40 text-sm mt-1">
+                {item.active
+                  ? "Open product"
+                  : "Coming soon — not yet available"}
+              </p>
+            </motion.div>
+          );
+        })}
+      </div>
 
-			{/* Delete Account */}
-			<div className='mt-10 pt-6 border-t border-white/10'>
-				<button
-					onClick={() => setShowDeleteDialog(true)}
-					className='flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition'
-				>
-					<Trash2 className='w-4 h-4' />
-					Delete my account
-				</button>
-			</div>
+      {/* Account Actions */}
+      <div className="mt-10 pt-6 border-t border-white/10 flex flex-col gap-4">
+        <button
+          onClick={() => router.push("/reset-password")}
+          className="flex items-center gap-2 text-sm text-white/60 hover:text-white transition w-fit"
+        >
+          <KeyRound className="w-4 h-4" />
+          Reset password
+        </button>
+        <button
+          onClick={() => setShowDeleteDialog(true)}
+          className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition w-fit"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete my account
+        </button>
+      </div>
 
-			<DeleteAccountDialog
-				open={showDeleteDialog}
-				onOpenChange={setShowDeleteDialog}
-			/>
+      <DeleteAccountDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+      />
 
-			{/* Footer */}
-			<div className='mt-auto pt-10 text-center text-white/40 text-sm'>
-				ISCE Digital Concept © {new Date().getFullYear()}
-			</div>
-		</div>
-	);
+      {/* Footer */}
+      <div className="mt-auto pt-10 text-center text-white/40 text-sm">
+        ISCE Digital Concept © {new Date().getFullYear()}
+      </div>
+    </div>
+  );
 }
