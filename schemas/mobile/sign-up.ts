@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const MOI = ["NIN", "CVC"] as const;
+export const MOI = ["NIN", "CAC", "TIN", "BVN"] as const;
 
 export const signUpForIndividualSchema = z.object({
   firstName: z
@@ -15,7 +15,7 @@ export const signUpForIndividualSchema = z.object({
     .string({ error: "Phone number is required" })
     .regex(
       /^(070|080|081|090|091|071)\d{8}$/,
-      "Enter a valid Nigerian phone number (e.g. 08012345678)"
+      "Enter a valid Nigerian phone number (e.g. 08012345678)",
     ),
 
   email: z
@@ -42,11 +42,11 @@ export const signUpForIndividualSchema = z.object({
     })
     .refine(
       (value) => value instanceof Date && !isNaN(value.getTime()),
-      "Enter a valid date"
+      "Enter a valid date",
     )
     .refine(
       (value) => value <= new Date(),
-      "Date of birth cannot be in the future"
+      "Date of birth cannot be in the future",
     ),
 
   passwordObj: z
@@ -124,12 +124,19 @@ export const otpSchema = z.object({
 
 export const signUpForBusinessSchema = z.object({
   businessName: z
-    .string()
-    .min(2, { message: "First name should be more than 2 characters" })
-    .optional(),
-  businessEmail: z.email({ message: "Email address is not valid" }).optional(),
+    .string({ error: "Business name is required" })
+    .min(2, { message: "Business name must be at least 2 characters" }),
+  businessEmail: z
+    .string({ error: "Business email is required" })
+    .email({ message: "Enter a valid business email address" }),
+  identificationType: z.enum(["NIN", "CAC", "TIN", "BVN"], {
+    error: "Please select an identification type",
+  }),
+  idNumber: z.string().optional(),
+  position: z.string().optional(),
+  businessAddress: z.string().optional(),
 });
 
 export const extendedSignUpSchema = signUpForIndividualSchema.merge(
-  signUpForBusinessSchema
+  signUpForBusinessSchema,
 );
