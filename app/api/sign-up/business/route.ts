@@ -1,6 +1,7 @@
 "use server";
 
 import { AUTH_API, URLS } from "@/lib/const";
+import { AuthService } from "@/lib/auth-service";
 import { extendedSignUpSchema } from "@/schemas/mobile/sign-up";
 import { NextResponse } from "next/server";
 
@@ -34,6 +35,7 @@ export async function POST(req: Request) {
       position: b.position ?? null,
       password: b.passwordObj.password,
       confirmpassword: b.passwordObj.confirmPassword,
+      referralCode: b.referralCode || raw.referralCode || raw.referralUsername || null,
     };
 
     const url = `${AUTH_API}${URLS.auth.sign_up_business}`;
@@ -50,6 +52,29 @@ export async function POST(req: Request) {
         { error: "Failed to create business account", details: data },
         { status: res.status || 400 },
       );
+    }
+
+    const userData = data?.data || data?.user || data;
+    const newUserId =
+      userData?.id ||
+      userData?.userId ||
+      userData?._id ||
+      userData?.user_id ||
+      data?.id ||
+      data?.userId ||
+      data?._id ||
+      data?.user_id ||
+      null;
+    const referralUsername = payload.referralCode || null;
+
+    if (newUserId && referralUsername) {
+      const attachRes = await AuthService.attachReferral({
+        newUserId: String(newUserId),
+        referralUsername: String(referralUsername).trim(),
+      });
+      console.log("Business referral attach attempt result:", attachRes);
+    } else if (referralUsername) {
+      console.warn("Skipping attachReferral because newUserId could not be found in business response data:", data);
     }
 
     return NextResponse.json(data);

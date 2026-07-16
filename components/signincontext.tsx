@@ -43,12 +43,12 @@ export default function SignInClient({ callbackUrl }: Props) {
 		return () => clearInterval(t);
 	}, []);
 
-	const prompt =
-		singleProduct.get('prompt') === 'login' ? '&prompt=login' : '';
+	const promptParam =
+		singleProduct.get('prompt') === 'login' ? 'prompt=login' : '';
 	const signUpHref =
 		callbackUrl ?
-			`/sign-up?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
-		:	`/sign-up${prompt}`;
+			`/sign-up?redirect=${encodeURIComponent(callbackUrl)}${promptParam ? '&' + promptParam : ''}`
+		:	`/sign-up${promptParam ? '?' + promptParam : ''}`;
 
 	const handleSignIn = async (data: SignInFormData) => {
 		const flow = authLogger.flowId();
@@ -184,7 +184,14 @@ export default function SignInClient({ callbackUrl }: Props) {
 				},
 			);
 
-			if (safe && accessToken) {
+			const isDashboardRedirect =
+				safe &&
+				(safe === '/' ||
+					safe === window.location.origin + '/' ||
+					safe.startsWith('/dashboard') ||
+					safe.startsWith(window.location.origin + '/dashboard'));
+
+			if (safe && accessToken && !isDashboardRedirect) {
 				// Use server-side launch to avoid exposing token to JS
 				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(safe)}`;
 				authLogger.log(
@@ -198,15 +205,18 @@ export default function SignInClient({ callbackUrl }: Props) {
 				window.location.href = launchUrl;
 				return;
 			}
+			const targetUrl = safe && isDashboardRedirect && safe !== '/' && safe !== window.location.origin + '/'
+				? safe
+				: '/dashboard';
 			authLogger.log(
 				'DESKTOP-SIGNIN',
-				`[${flow}] No callback — pushing to /dashboard`,
+				`[${flow}] Pushing to ${targetUrl}`,
 			);
 			authLogger.log(
 				'DESKTOP-SIGNIN',
 				`[${flow}] === Sign-in flow complete (dashboard) === totalMs=${elapsed()}`,
 			);
-			router.push('/dashboard');
+			router.push(targetUrl);
 		} catch (error) {
 			authLogger.error(
 				'DESKTOP-SIGNIN',

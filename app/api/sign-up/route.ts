@@ -1,6 +1,7 @@
 "use server";
 
 import { AUTH_API, URLS } from "@/lib/const";
+import { AuthService } from "@/lib/auth-service";
 
 import { userType } from "@/lib/types/auth";
 import {
@@ -49,6 +50,7 @@ export async function POST(req: Request) {
         address: u.address,
         password: u.passwordObj.password,
         confirmpassword: u.passwordObj.confirmPassword,
+        referralCode: u.referralCode || raw.referralCode || raw.referralUsername || null,
         isce_permissions: {
           connect: true,
           connect_plus: true,
@@ -82,6 +84,7 @@ export async function POST(req: Request) {
         address: b.address,
         password: b.passwordObj.password,
         confirmpassword: b.passwordObj.password, // if confirm ≠ password, set accordingly
+        referralCode: b.referralCode || raw.referralCode || raw.referralUsername || null,
         isce_permissions: {
           connect: true,
           connect_plus: true,
@@ -125,5 +128,29 @@ async function forwardToAuth(payload: any, userType: string) {
       { error: "Failed to create account", details: data },
       { status: res.status || 400 }
     );
+
+  const userData = data?.data || data?.user || data;
+  const newUserId =
+    userData?.id ||
+    userData?.userId ||
+    userData?._id ||
+    userData?.user_id ||
+    data?.id ||
+    data?.userId ||
+    data?._id ||
+    data?.user_id ||
+    null;
+  const referralUsername = payload.referralCode || null;
+
+  if (newUserId && referralUsername) {
+    const attachRes = await AuthService.attachReferral({
+      newUserId: String(newUserId),
+      referralUsername: String(referralUsername).trim(),
+    });
+    console.log("Referral attach attempt result:", attachRes);
+  } else if (referralUsername) {
+    console.warn("Skipping attachReferral because newUserId could not be found in response data:", data);
+  }
+
   return NextResponse.json(data);
 }

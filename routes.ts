@@ -5,6 +5,8 @@ export const publicRoutes = [
   "/forgot-password/reset",
   "/forgot-password/success",
   "/register",
+  "/sign-up",
+  "/signup",
 ];
-export const authRoutes = ["/sign-in", "/sign-up", "/sso/logout"];
+export const authRoutes = ["/sign-in", "/sign-up", "/signup", "/sso/logout"];
 export const apiAuthPrefix = "/api/auth";
