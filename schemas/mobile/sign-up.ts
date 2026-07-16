@@ -66,6 +66,7 @@ export const signUpForIndividualSchema = z.object({
       message: "Passwords do not match",
       path: ["confirmPassword"],
     }),
+  referralCode: z.string().optional(),
 });
 
 // export const signUpForIndividualSchema = z.object({
@@ -135,6 +136,7 @@ export const signUpForBusinessSchema = z.object({
   idNumber: z.string().optional(),
   position: z.string().optional(),
   businessAddress: z.string().optional(),
+  referralCode: z.string().optional(),
 });
 
 export const extendedSignUpSchema = signUpForIndividualSchema.merge(

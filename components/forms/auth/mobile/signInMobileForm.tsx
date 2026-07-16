@@ -268,7 +268,14 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 				},
 			);
 
-			if (safe && accessToken) {
+			const isDashboardRedirect =
+				safe &&
+				(safe === '/' ||
+					safe === window.location.origin + '/' ||
+					safe.startsWith('/dashboard') ||
+					safe.startsWith(window.location.origin + '/dashboard'));
+
+			if (safe && accessToken && !isDashboardRedirect) {
 				// Use server-side launch to avoid exposing token to JS
 				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(safe)}`;
 				authLogger.log(
@@ -282,15 +289,18 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 				window.location.href = launchUrl;
 				return;
 			}
+			const targetUrl = safe && isDashboardRedirect && safe !== '/' && safe !== window.location.origin + '/'
+				? safe
+				: '/dashboard';
 			authLogger.log(
 				'MOBILE-SIGNIN',
-				`[${flow}] No callback — pushing to /dashboard`,
+				`[${flow}] Pushing to ${targetUrl}`,
 			);
 			authLogger.log(
 				'MOBILE-SIGNIN',
 				`[${flow}] === Sign-in flow complete (dashboard) === totalMs=${elapsed()}`,
 			);
-			router.push('/dashboard');
+			router.push(targetUrl);
 		} catch (e) {
 			authLogger.error(
 				'MOBILE-SIGNIN',

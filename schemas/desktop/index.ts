@@ -34,6 +34,8 @@ export const baseUserDetailsSchema = z.object({
     .string()
     .email("Please enter a valid email address")
     .min(1, "Email is required"),
+  referralCode: z.string().optional(),
+  referralUsername: z.string().optional(),
 });
 
 const individualUserDetailsSchema = baseUserDetailsSchema.extend({

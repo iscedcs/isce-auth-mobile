@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useSearchParams } from "next/navigation";
 
 import { AuthService } from "@/lib/auth-service";
 import { csrfFetch } from "@/lib/csrf-client";
@@ -50,6 +51,8 @@ interface BusinessSignUpFormProps {
   setStepNumber: React.Dispatch<React.SetStateAction<number>>;
   getRedirect: () => string;
   prefillEmail?: string;
+  /** Referral code passed down from the parent orchestrator (signUpMobile). */
+  referralCode?: string | null;
   onBackFromFirst?: () => void;
 }
 
@@ -87,6 +90,7 @@ export default function BusinessSignUpForm({
   setStepNumber,
   getRedirect,
   prefillEmail,
+  referralCode: referralCodeProp,
   onBackFromFirst,
 }: BusinessSignUpFormProps) {
   // ── Form setup ────────────────────────────────────────────────────────────
@@ -110,12 +114,31 @@ export default function BusinessSignUpForm({
   const otpVerifyInFlightRef = useRef(false);
   const otpResendInFlightRef = useRef(false);
 
-  // ── Pre-fill email ────────────────────────────────────────────────────────
+  const sp = useSearchParams();
+
+  const [isReferralDisabled, setIsReferralDisabled] = useState(false);
+
+  // ── Pre-fill email and referral ───────────────────────────────────────────
   useEffect(() => {
     if (prefillEmail) {
       form.setValue("email", prefillEmail, { shouldValidate: false });
     }
-  }, [prefillEmail, form]);
+    // Priority: prop from parent > URL param > sessionStorage fallback
+    const fromUrl =
+      sp?.get("ref") ||
+      sp?.get("referralCode") ||
+      sp?.get("referralUsername");
+    const fromStorage = sessionStorage.getItem("referral_code");
+    const refCode = referralCodeProp?.trim() || fromUrl?.trim() || fromStorage?.trim() || null;
+    if (refCode) {
+      // Persist so the code survives any subsequent navigation
+      sessionStorage.setItem("referral_code", refCode);
+      setIsReferralDisabled(true);
+      if (!form.getValues("referralCode")) {
+        form.setValue("referralCode", refCode, { shouldValidate: false });
+      }
+    }
+  }, [prefillEmail, sp, form, referralCodeProp]);
 
   // ── Navigation helpers ────────────────────────────────────────────────────
   const goToStep = (targetStep: number, targetStepNumber: number) => {
@@ -301,6 +324,10 @@ export default function BusinessSignUpForm({
       position: data.position ?? null,
       password: data.passwordObj.password,
       confirmpassword: data.passwordObj.confirmPassword,
+      referralCode:
+        data.referralCode?.trim() ||
+        sessionStorage.getItem("referral_code") ||
+        null,
     };
 
     try {
@@ -329,21 +356,55 @@ export default function BusinessSignUpForm({
 
           toast.success("You're In!");
           const safe = getSafeRedirect(getRedirect());
+          const isRealCallback =
+            safe &&
+            safe !== "/" &&
+            safe !== window.location.origin + "/" &&
+            !safe.startsWith("/dashboard") &&
+            !safe.startsWith(window.location.origin + "/dashboard");
           setIsBuildingProfile(true);
 
           setTimeout(() => {
-            if (safe && login.data?.accessToken) {
+            if (isRealCallback && login.data?.accessToken) {
               window.location.href = `/api/auth/launch?url=${encodeURIComponent(safe)}`;
               return;
             }
-            window.location.href = "/dashboard";
+            if (isRealCallback) {
+              window.location.href = safe;
+              return;
+            }
+            const refCode =
+              payload.referralCode ||
+              (typeof sessionStorage !== "undefined"
+                ? sessionStorage.getItem("referral_code")
+                : null) ||
+              null;
+            const dashboardUrl = refCode
+              ? `/dashboard?referralCode=${encodeURIComponent(refCode)}`
+              : (safe && (safe.startsWith("/dashboard") || safe.startsWith(window.location.origin + "/dashboard")) ? safe : "/dashboard");
+            window.location.href = dashboardUrl;
           }, 1500);
           return;
         }
 
         const r = getRedirect();
+        const refCode =
+          payload.referralCode ||
+          (typeof sessionStorage !== "undefined"
+            ? sessionStorage.getItem("referral_code")
+            : null) ||
+          null;
+        const redirectUrl =
+          r === "/" ||
+          r === "/dashboard" ||
+          r === window.location.origin + "/" ||
+          r === window.location.origin + "/dashboard"
+            ? refCode
+              ? `/dashboard?referralCode=${encodeURIComponent(refCode)}`
+              : "/dashboard"
+            : r;
         toast.success("Account created! Please sign in.");
-        window.location.href = `/sign-in?redirect=${encodeURIComponent(r)}`;
+        window.location.href = `/sign-in?redirect=${encodeURIComponent(redirectUrl)}`;
         return;
       }
 
@@ -427,6 +488,28 @@ export default function BusinessSignUpForm({
                       className="rounded-[12px] h-[50px] text-[16px]"
                       placeholder="e.g. Doe"
                       {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="referralCode"
+              render={({ field }) => (
+                <FormItem className="mt-3">
+                  <Label className="font-extrabold text-[24px]">
+                    Referral username (optional)
+                  </Label>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      disabled={isReferralDisabled}
+                      readOnly={isReferralDisabled}
+                      autoComplete="off"
+                      className="rounded-[12px] h-[50px] text-[16px] disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder="e.g. johndoe"
                     />
                   </FormControl>
                   <FormMessage />
@@ -572,7 +655,31 @@ export default function BusinessSignUpForm({
                 className="w-full rounded-[12px] font-semibold py-[24px]"
                 onClick={async () => {
                   const valid = await stepGuard(STEP_SIZE * 4);
-                  if (valid) goToStep(STEP_SIZE * 5, 5);
+                  if (!valid) return;
+
+                  const phone = form.getValues("phoneNumber");
+                  setIsLoading(true);
+                  try {
+                    const { exists } = await AuthService.checkPhone(phone);
+                    if (exists) {
+                      toast.error("Phone number already registered", {
+                        description:
+                          "An account with this phone number already exists. Please use a different number or sign in.",
+                      });
+                      form.setError("phoneNumber", {
+                        type: "manual",
+                        message: "This phone number is already registered.",
+                      });
+                      setIsLoading(false);
+                      return;
+                    }
+                  } catch (e) {
+                    console.error("Phone check error:", e);
+                  } finally {
+                    setIsLoading(false);
+                  }
+
+                  goToStep(STEP_SIZE * 5, 5);
                 }}
               >
                 Continue

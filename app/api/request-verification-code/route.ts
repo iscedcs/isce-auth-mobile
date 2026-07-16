@@ -5,7 +5,6 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const url = `${AUTH_API}${URLS.auth.request_verification_code}`;
-    //   const payload = { email };
     const { email } = await req.json();
     const res = await fetch(url, {
       method: "POST",
@@ -14,27 +13,25 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
       },
     });
-    const data = await res.json();
-    // console.log({ data });
-    if (data.statusCode === 500) {
-      return NextResponse.json(
-        { error: "This email is already being used." },
-        { status: 500 }
-      );
-    }
+    const data = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      return NextResponse.json(
-        { error: "Failed to send OTP" },
-        { status: 400 }
-      );
+      // Forward the backend's actual message so the client can surface it
+      const message =
+        (Array.isArray(data?.message)
+          ? data.message.filter(Boolean).join(", ")
+          : data?.message) ||
+        data?.error ||
+        "Failed to send verification code";
+      return NextResponse.json({ error: message }, { status: res.status });
     }
 
     return NextResponse.json(data);
   } catch (e) {
-    console.log("Email OTP Request POST error", e);
+    console.error("Email OTP Request POST error", e);
     return NextResponse.json(
-      { error: "Invalid request", details: e },
-      { status: 400 }
+      { error: "Failed to send verification code. Please try again." },
+      { status: 500 }
     );
   }
 }

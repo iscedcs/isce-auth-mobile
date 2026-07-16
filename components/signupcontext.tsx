@@ -1,6 +1,6 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AuthService } from '@/lib/auth-service';
 import { csrfFetch } from '@/lib/csrf-client';
 import { getSafeRedirect } from '@/lib/safe-redirect';
@@ -28,7 +28,9 @@ type SignupData = {
 	passwordCreation?: PasswordCreationFormData;
 };
 
-type Props = { callbackUrl: string | null };
+interface Props {
+	callbackUrl?: string;
+}
 
 export default function SignUpClient({ callbackUrl }: Props) {
 	const router = useRouter();
@@ -40,12 +42,26 @@ export default function SignUpClient({ callbackUrl }: Props) {
 	const otpRequestInFlightRef = useRef(false);
 	const otpResendInFlightRef = useRef(false);
 	const singleProduct = useSearchParams();
-	const safe = getSafeRedirect(callbackUrl);
+
+	const safe = useMemo(() => {
+		const raw =
+			callbackUrl ||
+			singleProduct.get('callbackUrl') ||
+			singleProduct.get('redirect') ||
+			singleProduct.get('redirect_uri') ||
+			singleProduct.get('url') ||
+			(typeof sessionStorage !== 'undefined'
+				? sessionStorage.getItem('redirect_hint')
+				: null);
+		return getSafeRedirect(raw) || null;
+	}, [callbackUrl, singleProduct]);
 
 	// ─── Email pre-step ────────────────────────────────────────────────────────
 	const [emailStep, setEmailStep] = useState(true);
 	const [preEmail, setPreEmail] = useState('');
 	const [emailLoading, setEmailLoading] = useState(false);
+
+	const [referralCode, setReferralCode] = useState<string | null>(null);
 
 	// Skip email step if ?email= is provided in the URL
 	useEffect(() => {
@@ -56,13 +72,43 @@ export default function SignUpClient({ callbackUrl }: Props) {
 		}
 	}, [singleProduct]);
 
+	// Extract and persist referral code so it survives navigation
+	useEffect(() => {
+		const fromUrl =
+			singleProduct.get('ref') ||
+			singleProduct.get('referralCode') ||
+			singleProduct.get('referralUsername');
+		const fromStorage =
+			typeof sessionStorage !== 'undefined'
+				? sessionStorage.getItem('referral_code')
+				: null;
+		const code = fromUrl?.trim() || fromStorage?.trim() || null;
+		if (code) {
+			if (typeof sessionStorage !== 'undefined') {
+				sessionStorage.setItem('referral_code', code);
+			}
+			setReferralCode(code);
+		}
+	}, [singleProduct]);
+
 	useEffect(() => {
 		if (safe) sessionStorage.setItem('redirect_hint', safe);
 	}, [safe]);
 
 	function getRedirect() {
-		const fromStorage = sessionStorage.getItem('redirect_hint');
-		return getSafeRedirect(fromStorage) || '/';
+		const fromStorage =
+			typeof sessionStorage !== 'undefined'
+				? sessionStorage.getItem('redirect_hint')
+				: null;
+		return (
+			safe ||
+			getSafeRedirect(fromStorage) ||
+			getSafeRedirect(singleProduct.get('callbackUrl')) ||
+			getSafeRedirect(singleProduct.get('redirect')) ||
+			getSafeRedirect(singleProduct.get('redirect_uri')) ||
+			getSafeRedirect(singleProduct.get('url')) ||
+			'/'
+		);
 	}
 
 	// useEffect(() => {
@@ -100,6 +146,23 @@ export default function SignUpClient({ callbackUrl }: Props) {
 	};
 
 	const handleUserDetailsSubmit = async (data: UserDetailsFormData) => {
+		setIsLoading(true);
+		try {
+			const { exists } = await AuthService.checkPhone(data.phoneNumber);
+			if (exists) {
+				toast.error('Phone number already registered', {
+					description:
+						'An account with this phone number already exists. Please use a different number or sign in.',
+				});
+				setIsLoading(false);
+				return;
+			}
+		} catch (e) {
+			console.error('Phone check error:', e);
+		} finally {
+			setIsLoading(false);
+		}
+
 		let userDetails: SignupData['userDetails'];
 
 		if ((signupData.userType?.userType || 'USER') === 'BUSINESS_USER') {
@@ -140,7 +203,7 @@ export default function SignUpClient({ callbackUrl }: Props) {
 		setIsLoading(true);
 
 		try {
-			// If your backend supports separate OTP verification, uncomment this:
+			// Step 1: Verify OTP code
 			const response = await AuthService.verifyOtp({
 				...data,
 				email: signupData.userDetails.email,
@@ -152,21 +215,53 @@ export default function SignUpClient({ callbackUrl }: Props) {
 				return;
 			}
 
-			// Store the OTP data and continue to sign-in
+			// Store the OTP data
 			setSignupData((prev) => ({ ...prev, otpVerification: data }));
 			toast.success('Email verified successfully!');
 
+			// Step 2: Now that OTP is verified, complete account creation (exactly like mobile!)
+			const signupRes = await AuthService.completeSignup(
+				signupData.userDetails,
+				signupData.passwordCreation,
+			);
+
+			if (!signupRes.success) {
+				toast.error(
+					signupRes.message || 'Unable to create your account.',
+					{ id: 'desktop-signup' },
+				);
+				setIsLoading(false);
+				return;
+			}
+
+			// Step 3: Sign in after account creation
 			const login = await AuthService.signIn(
 				signupData.userDetails.email,
 				signupData.passwordCreation.password,
 			);
 			if (!login.success || !login.data?.accessToken) {
 				toast.error(
-					'Account verified, but login failed. Please sign in manually.',
+					'Account created, but login failed. Please sign in manually.',
 				);
-				const redirect = safe || getRedirect();
+				const r = safe || getRedirect();
+				const refCode =
+					signupData.userDetails?.referralCode ||
+					referralCode ||
+					(typeof sessionStorage !== 'undefined'
+						? sessionStorage.getItem('referral_code')
+						: null) ||
+					null;
+				const redirectUrl =
+					r === '/' ||
+					r === '/dashboard' ||
+					r === window.location.origin + '/' ||
+					r === window.location.origin + '/dashboard'
+						? refCode
+							? `/dashboard?referralCode=${encodeURIComponent(refCode)}`
+							: '/dashboard'
+						: r;
 				router.push(
-					`/sign-in?redirect=${encodeURIComponent(redirect)}`,
+					`/sign-in?redirect=${encodeURIComponent(redirectUrl)}`,
 				);
 				setIsLoading(false);
 				return;
@@ -182,17 +277,39 @@ export default function SignUpClient({ callbackUrl }: Props) {
 				body: JSON.stringify({ token: accessToken, refreshToken }),
 			});
 
+			const finalCallback = getRedirect();
+			const isRealCallback =
+				finalCallback &&
+				finalCallback !== '/' &&
+				finalCallback !== window.location.origin + '/' &&
+				!finalCallback.startsWith('/dashboard') &&
+				!finalCallback.startsWith(window.location.origin + '/dashboard');
+
 			toast.success('Welcome! Redirecting...');
 
-			if (safe && accessToken) {
-				// Use server-side launch to avoid exposing token to JS
-				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(safe)}`;
+			if (isRealCallback && accessToken) {
+				// Use server-side launch to avoid exposing token to JS and redirect to callback url
+				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(finalCallback)}`;
 				window.location.href = launchUrl;
 				return;
 			}
-			router.push('/dashboard');
+			if (isRealCallback) {
+				window.location.href = finalCallback;
+				return;
+			}
+			const refCode =
+				signupData.userDetails?.referralCode ||
+				referralCode ||
+				(typeof sessionStorage !== 'undefined'
+					? sessionStorage.getItem('referral_code')
+					: null) ||
+				null;
+			const dashboardUrl = refCode
+				? `/dashboard?referralCode=${encodeURIComponent(refCode)}`
+				: (finalCallback && (finalCallback.startsWith('/dashboard') || finalCallback.startsWith(window.location.origin + '/dashboard')) ? finalCallback : '/dashboard');
+			router.push(dashboardUrl);
 		} catch (error) {
-			console.error('OTP verification error:', error);
+			console.error('OTP verification or complete signup error:', error);
 			toast.error('An unexpected error occurred. Please try again.');
 		} finally {
 			setIsLoading(false);
@@ -203,7 +320,7 @@ export default function SignUpClient({ callbackUrl }: Props) {
 		data: PasswordCreationFormData,
 	) => {
 		if (otpRequestInFlightRef.current) return;
-		if (!signupData.userDetails) {
+		if (!signupData.userDetails?.email) {
 			toast.error('User details not found. Please start over.');
 			setCurrentStep(1);
 			return;
@@ -213,36 +330,25 @@ export default function SignUpClient({ callbackUrl }: Props) {
 
 		try {
 			otpRequestInFlightRef.current = true;
-			const response = await AuthService.completeSignup(
-				signupData.userDetails,
-				data,
+			// Store password creation data
+			setSignupData((prev) => ({ ...prev, passwordCreation: data }));
+
+			// Request OTP BEFORE creating account (exactly like mobile!)
+			const otpResponse = await AuthService.requestOtp(
+				signupData.userDetails.email,
 			);
-
-			if (response.success) {
-				setSignupData((prev) => ({ ...prev, passwordCreation: data }));
-				const otpResponse = await AuthService.requestOtp(
-					signupData.userDetails.email,
-				);
-				if (!otpResponse.success) {
-					toast.error(otpResponse.message, {
-						id: 'desktop-otp-request',
-					});
-					return;
-				}
-
-				toast.success(
-					'Details saved! Please check your email for verification code.',
-					{ id: 'desktop-otp-request' },
-				);
-				setCurrentStep(4);
-			} else {
-				toast.error(
-					response.message || 'Unable to create your account.',
-					{
-						id: 'desktop-signup',
-					},
-				);
+			if (!otpResponse.success) {
+				toast.error(otpResponse.message, {
+					id: 'desktop-otp-request',
+				});
+				return;
 			}
+
+			toast.success(
+				'Details saved! Please check your email for verification code.',
+				{ id: 'desktop-otp-request' },
+			);
+			setCurrentStep(4);
 		} catch (error) {
 			console.error('Complete signup error:', error);
 			toast.error('An unexpected error occurred. Please try again.', {
@@ -305,9 +411,17 @@ export default function SignUpClient({ callbackUrl }: Props) {
 					description:
 						'An account with this email already exists. Redirecting you to sign in…',
 				});
-				router.push(
-					`/sign-in?email=${encodeURIComponent(preEmail.trim())}`,
-				);
+				// Only carry the email and any app redirect — NOT the referral code.
+				// Referrals only apply to net-new users; an existing user signing in
+				// should never trigger a referral reward.
+				const signInParams = new URLSearchParams();
+				signInParams.set('email', preEmail.trim());
+				const redirectHint =
+					typeof sessionStorage !== 'undefined'
+						? sessionStorage.getItem('redirect_hint')
+						: null;
+				if (redirectHint) signInParams.set('redirect', redirectHint);
+				router.push(`/sign-in?${signInParams.toString()}`);
 				return;
 			}
 			setEmailStep(false);
@@ -368,6 +482,8 @@ export default function SignUpClient({ callbackUrl }: Props) {
 						defaultValues={{ email: preEmail, ...signupData.userDetails }}
 						userType={selectedUserType || 'USER'}
 						isLoading={isLoading}
+						referralCode={referralCode}
+						prefillEmail={preEmail}
 					/>
 				);
 			case 3:
