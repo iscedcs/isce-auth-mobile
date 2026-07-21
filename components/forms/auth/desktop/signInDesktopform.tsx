@@ -150,9 +150,8 @@ export function DesktopSignInForm({
 
           <Button
             type="submit"
-            variant="outline"
             disabled={isLoading}
-            className="w-full text-md bg-transparent hover:bg-background-100 text-primary py-3 rounded-lg font-semibold">
+            className="w-full rounded-[12px] font-semibold py-[24px]">
             {isLoading ? "Signing In..." : "Sign In"}
           </Button>
         </form>

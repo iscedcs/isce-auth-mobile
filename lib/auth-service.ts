@@ -68,13 +68,20 @@ interface CompleteSignupData {
   lastName: string;
   email: string;
   phone: string; // Note: backend expects 'phone', not 'phoneNumber'
-  userType: string;
+  userType?: string;
   address: string;
   dob: string;
   password: string;
   confirmpassword: string; // Note: backend expects 'confirmpassword', not 'confirmPassword'
   referralCode?: string;
   referralUsername?: string;
+  businessName?: string;
+  businessEmail?: string;
+  identificationType?: string;
+  idNumber?: string;
+  position?: string;
+  businessAddress?: string;
+  displayPicture?: string;
 }
 
 export class AuthService {
@@ -284,7 +291,10 @@ export class AuthService {
     userDetails: UserDetailsFormData,
     passwordData: PasswordCreationFormData,
   ): Promise<SignupResponse> {
-    const url = `${this.baseUrl}${URLS.auth.sign_up}`;
+    const isBusiness = userDetails.userType === "BUSINESS_USER";
+    const url = isBusiness
+      ? `${this.baseUrl}${URLS.auth.sign_up_business}`
+      : `${this.baseUrl}${URLS.auth.sign_up}`;
 
     try {
       const referralUsername =
@@ -294,25 +304,39 @@ export class AuthService {
           : undefined);
 
       // Prepare payload based on account type
-      const payload: CompleteSignupData = {
-        firstName: userDetails.firstName,
-        lastName: userDetails.lastName,
-        email: userDetails.email,
-        phone: userDetails.phoneNumber,
-        userType: userDetails.userType,
-        address:
-          userDetails.userType === "BUSINESS_USER"
-            ? userDetails.address!
-            : "N/A",
-        dob:
-          userDetails.userType === "BUSINESS_USER"
-            ? userDetails.dob!
-            : "1990-01-01", // Default DOB for individual
-        password: passwordData.password,
-        confirmpassword: passwordData.password,
-        referralCode: referralUsername,
-        referralUsername: referralUsername,
-      };
+      const payload: CompleteSignupData = isBusiness
+        ? {
+            firstName: userDetails.firstName,
+            lastName: userDetails.lastName,
+            phone: userDetails.phoneNumber,
+            email: userDetails.email,
+            businessName: (userDetails as any).businessName || `${userDetails.firstName} Business`,
+            businessEmail: (userDetails as any).businessEmail || userDetails.email,
+            identificationType: (userDetails as any).identificationType || "CAC",
+            idNumber: (userDetails as any).idNumber || "string",
+            position: (userDetails as any).position || "string",
+            businessAddress: (userDetails as any).businessAddress || userDetails.address || "string",
+            displayPicture: (userDetails as any).displayPicture || "string",
+            dob: userDetails.dob || "mm/dd/yyyy",
+            address: userDetails.address || "12 Broad Street, Lagos",
+            password: passwordData.password,
+            confirmpassword: passwordData.password,
+            referralCode: referralUsername,
+            referralUsername: referralUsername,
+          }
+        : {
+            firstName: userDetails.firstName,
+            lastName: userDetails.lastName,
+            email: userDetails.email,
+            phone: userDetails.phoneNumber,
+            userType: userDetails.userType,
+            address: userDetails.address || "N/A",
+            dob: userDetails.dob || "1990-01-01", // Default DOB for individual
+            password: passwordData.password,
+            confirmpassword: passwordData.password,
+            referralCode: referralUsername,
+            referralUsername: referralUsername,
+          };
 
       // console.log("Sending complete signup payload:", payload);
 

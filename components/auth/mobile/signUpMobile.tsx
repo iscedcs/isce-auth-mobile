@@ -240,9 +240,10 @@ export default function SignUpMobile({
             <p className="font-extrabold text-[24px]">Select an account type</p>
             <div className="flex flex-col gap-5">
               <Card
+                onClick={handleIndividual}
                 className={` ${
                   individual ? " border-[0.5]" : " border-0"
-                } py-2.5 px-[15px] flex flex-row rounded-[12px]`}
+                } py-2.5 px-[15px] flex flex-row rounded-[12px] cursor-pointer`}
               >
                 <CardContent className="">
                   <p className="font-bold text-white text-5">Individual</p>
@@ -255,6 +256,26 @@ export default function SignUpMobile({
                   <Checkbox
                     checked={individual}
                     onClick={() => handleIndividual()}
+                  />
+                </div>
+              </Card>
+              <Card
+                onClick={handleBusiness}
+                className={` ${
+                  business ? " border-[0.5]" : " border-0"
+                } py-2.5 px-[15px] flex flex-row rounded-[12px] cursor-pointer`}
+              >
+                <CardContent className="">
+                  <p className="font-bold text-white text-5">Business</p>
+                  <p className="text-[14px] text-white">
+                    {`Ideal for businesses. Includes advanced features and
+                    requires additional business information.`}
+                  </p>
+                </CardContent>
+                <div className="">
+                  <Checkbox
+                    checked={business}
+                    onClick={() => handleBusiness()}
                   />
                 </div>
               </Card>

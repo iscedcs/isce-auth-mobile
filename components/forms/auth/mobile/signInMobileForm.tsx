@@ -191,12 +191,13 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 				return;
 			}
 
-			const { accessToken, refreshToken, firstName } = result.data;
+			const { accessToken, refreshToken, firstName, userType } = result.data;
 
 			authLogger.log('MOBILE-SIGNIN', `[${flow}] Step 1 data extracted`, {
 				hasAccessToken: !!accessToken,
 				hasRefreshToken: !!refreshToken,
 				firstName: firstName || 'empty',
+				userType: userType || 'unknown',
 			});
 
 			if (!accessToken) {
@@ -268,6 +269,12 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 				},
 			);
 
+			const isBusinessUser =
+				userType === 'BUSINESS_USER' ||
+				userType === 'BUSINESS' ||
+				userType?.toUpperCase() === 'BUSINESS_USER' ||
+				userType?.toUpperCase() === 'BUSINESS';
+
 			const isDashboardRedirect =
 				safe &&
 				(safe === '/' ||
@@ -289,6 +296,18 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 				window.location.href = launchUrl;
 				return;
 			}
+
+			if (isBusinessUser) {
+				const businessTarget = 'https://isce.app/business';
+				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(businessTarget)}`;
+				authLogger.log(
+					'MOBILE-SIGNIN',
+					`[${flow}] Business user sign-in: launching to ${businessTarget}`,
+				);
+				window.location.href = launchUrl;
+				return;
+			}
+
 			const targetUrl = safe && isDashboardRedirect && safe !== '/' && safe !== window.location.origin + '/'
 				? safe
 				: '/dashboard';

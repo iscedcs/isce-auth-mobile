@@ -75,15 +75,14 @@ export function AccountTypeForm({
                       </div>
                     </div>
 
-                    {/* <div className="relative items-start space-x-4 p-4 border border-gray-700 rounded-lg cursor-pointer peer-checked:border-white peer-checked:bg-gray-900/50 hover:border-gray-600 transition-colors">
+                    <div className="relative flex items-start space-x-4 p-4 border border-gray-700 rounded-lg cursor-pointer hover:border-gray-600 transition-colors">
                       <RadioGroupItem
-                        disabled
                         value="BUSINESS_USER"
                         id="BUSINESS_USER"
                         className="peer hidden"
                         checked={field.value === "BUSINESS_USER"}
                       />
-                      <Label htmlFor="BUSINESS_USER" className="flex ">
+                      <Label htmlFor="BUSINESS_USER" className="flex cursor-pointer">
                         <div className="flex-1">
                           <h3 className="font-medium text-white mb-1">
                             Business
@@ -93,40 +92,20 @@ export function AccountTypeForm({
                             requires additional business information.
                           </p>
                         </div>
-                        <div className="w-4 h-4 border border-gray-400 rounded-sm peer-checked:border-white peer-checked:bg-white flex items-center justify-center">
-                          <svg
-                            className="w-3 h-3 text-black opacity-0 peer-checked:opacity-100  transition"
-                            fill="currentColor"
-                            viewBox="0 0 20 20">
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </div>
                       </Label>
-                    </div> */}
-                    {/* <div
-                      className="relative items-start space-x-4 p-4 border border-gray-700 rounded-lg 
-    opacity-40 cursor-not-allowed pointer-events-none">
-                      <RadioGroupItem
-                        value="BUSINESS_USER"
-                        id="BUSINESS_USER"
-                        className="peer hidden"
-                        disabled
-                      />
-                      <Label htmlFor="BUSINESS_USER" className="flex">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-white mb-1">
-                            Business
-                          </h3>
-                          <p className="text-sm text-gray-400">
-                            Currently unavailable — coming soon.
-                          </p>
-                        </div>
-                      </Label>
-                    </div> */}
+                      <div className="w-4 h-4 border border-gray-400 rounded-sm flex items-center justify-center peer-data-[state=checked]:border-white peer-data-[state=checked]:bg-white">
+                        <svg
+                          className="w-3 h-3 text-black opacity-0 peer-data-[state=checked]:opacity-100 transition"
+                          fill="currentColor"
+                          viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    </div>
                   </RadioGroup>
                 </FormControl>
                 <FormMessage />
@@ -137,11 +116,7 @@ export function AccountTypeForm({
           <Button
             type="submit"
             disabled={!form.watch("userType")}
-            className={`w-full py-3 rounded-lg ${
-              form.watch("userType")
-                ? "bg-white text-black hover:bg-gray-200"
-                : "bg-gray-600 text-white opacity-50 cursor-not-allowed"
-            }`}>
+            className="w-full rounded-[12px] font-semibold py-[24px]">
             Continue
           </Button>
         </form>

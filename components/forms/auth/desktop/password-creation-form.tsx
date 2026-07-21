@@ -172,7 +172,7 @@ export function PasswordCreationForm({
 
           <Button
             type="submit"
-            className="w-full bg-gray-600 hover:bg-gray-500 text-white py-3 rounded-lg">
+            className="w-full rounded-[12px] font-semibold py-[24px]">
             Login
           </Button>
         </form>

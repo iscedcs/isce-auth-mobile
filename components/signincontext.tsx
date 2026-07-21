@@ -184,6 +184,12 @@ export default function SignInClient({ callbackUrl }: Props) {
 				},
 			);
 
+			const isBusinessUser =
+				userType === 'BUSINESS_USER' ||
+				userType === 'BUSINESS' ||
+				userType?.toUpperCase() === 'BUSINESS_USER' ||
+				userType?.toUpperCase() === 'BUSINESS';
+
 			const isDashboardRedirect =
 				safe &&
 				(safe === '/' ||
@@ -205,6 +211,18 @@ export default function SignInClient({ callbackUrl }: Props) {
 				window.location.href = launchUrl;
 				return;
 			}
+
+			if (isBusinessUser) {
+				const businessTarget = 'https://isce.app/business';
+				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(businessTarget)}`;
+				authLogger.log(
+					'DESKTOP-SIGNIN',
+					`[${flow}] Business user sign-in: launching to ${businessTarget}`,
+				);
+				window.location.href = launchUrl;
+				return;
+			}
+
 			const targetUrl = safe && isDashboardRedirect && safe !== '/' && safe !== window.location.origin + '/'
 				? safe
 				: '/dashboard';
