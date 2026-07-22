@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthService } from '@/lib/auth-service';
 import { authLogger } from '@/lib/auth-logger';
+import { BUSINESS_URL } from '@/lib/const';
 import { csrfFetch } from '@/lib/csrf-client';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 import { signInFormSchema } from '@/schemas/mobile/sign-in';
@@ -298,7 +299,7 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 			}
 
 			if (isBusinessUser) {
-				const businessTarget = 'https://isce.app/business';
+				const businessTarget = BUSINESS_URL;
 				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(businessTarget)}`;
 				authLogger.log(
 					'MOBILE-SIGNIN',

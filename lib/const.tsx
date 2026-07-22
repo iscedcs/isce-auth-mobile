@@ -2,6 +2,11 @@
 export const AUTH_API =
 	process.env.AUTH_API_URL || process.env.NEXT_PUBLIC_AUTH_API_URL;
 
+export const BUSINESS_URL =
+	process.env.BUSINESS_URL ||
+	process.env.NEXT_PUBLIC_BUSINESS_URL ||
+	"https://isce.app/business";
+
 export const URLS = {
 	auth: {
 		sign_up: "/auth/signup",

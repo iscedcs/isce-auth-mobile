@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AuthService } from '@/lib/auth-service';
 import { csrfFetch } from '@/lib/csrf-client';
 import { getSafeRedirect } from '@/lib/safe-redirect';
+import { BUSINESS_URL } from '@/lib/const';
 import {
 	AddressDobFormData,
 	BusinessOnlyDetailsFormData,
@@ -365,7 +366,7 @@ export default function SignUpClient({ callbackUrl }: Props) {
 				return;
 			}
 			if (isBusinessAccount) {
-				const businessTarget = 'https://isce.app/business';
+				const businessTarget = BUSINESS_URL;
 				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(businessTarget)}`;
 				window.location.href = launchUrl;
 				return;

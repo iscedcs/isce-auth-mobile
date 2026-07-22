@@ -4,6 +4,7 @@ import { AuthService } from '@/lib/auth-service';
 import { authLogger } from '@/lib/auth-logger';
 import { csrfFetch } from '@/lib/csrf-client';
 import { getSafeRedirect } from '@/lib/safe-redirect';
+import { BUSINESS_URL } from '@/lib/const';
 import { SignInFormData } from '@/schemas/desktop';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -213,7 +214,7 @@ export default function SignInClient({ callbackUrl }: Props) {
 			}
 
 			if (isBusinessUser) {
-				const businessTarget = 'https://isce.app/business';
+				const businessTarget = BUSINESS_URL;
 				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(businessTarget)}`;
 				authLogger.log(
 					'DESKTOP-SIGNIN',

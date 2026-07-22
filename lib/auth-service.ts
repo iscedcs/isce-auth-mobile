@@ -68,20 +68,20 @@ interface CompleteSignupData {
   lastName: string;
   email: string;
   phone: string; // Note: backend expects 'phone', not 'phoneNumber'
-  userType?: string;
-  address: string;
-  dob: string;
+  userType?: string | null;
+  address?: string | null;
+  dob?: string | null;
   password: string;
   confirmpassword: string; // Note: backend expects 'confirmpassword', not 'confirmPassword'
-  referralCode?: string;
-  referralUsername?: string;
-  businessName?: string;
-  businessEmail?: string;
-  identificationType?: string;
-  idNumber?: string;
-  position?: string;
-  businessAddress?: string;
-  displayPicture?: string;
+  referralCode?: string | null;
+  referralUsername?: string | null;
+  businessName?: string | null;
+  businessEmail?: string | null;
+  identificationType?: string | null;
+  idNumber?: string | null;
+  position?: string | null;
+  businessAddress?: string | null;
+  displayPicture?: string | null;
 }
 
 export class AuthService {
@@ -313,11 +313,11 @@ export class AuthService {
             businessName: (userDetails as any).businessName || `${userDetails.firstName} Business`,
             businessEmail: (userDetails as any).businessEmail || userDetails.email,
             identificationType: (userDetails as any).identificationType || "CAC",
-            idNumber: (userDetails as any).idNumber || "string",
-            position: (userDetails as any).position || "string",
-            businessAddress: (userDetails as any).businessAddress || userDetails.address || "string",
-            displayPicture: (userDetails as any).displayPicture || "string",
-            dob: userDetails.dob || "mm/dd/yyyy",
+            idNumber: (userDetails as any).idNumber || null,
+            position: (userDetails as any).position || null,
+            businessAddress: (userDetails as any).businessAddress || userDetails.address || null,
+            displayPicture: (userDetails as any).displayPicture || null,
+            dob: userDetails.dob || null,
             address: userDetails.address || "12 Broad Street, Lagos",
             password: passwordData.password,
             confirmpassword: passwordData.password,

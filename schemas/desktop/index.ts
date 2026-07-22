@@ -86,28 +86,8 @@ const businessUserDetailsSchema = baseUserDetailsSchema.extend({
   position: z.string().optional(),
   businessAddress: z.string().optional(),
   displayPicture: z.string().optional(),
-  address: z
-    .string({
-      error: "This field cannot be empty",
-    })
-    .min(2, {
-      error: "Address must be at least 2 characters.",
-    })
-    .max(100, {
-      error: "Address must not be longer than 100 characters.",
-    }),
-  dob: z
-    .string()
-    .min(2, { error: "Please enter a valid date of birth" })
-    .refine(
-      (date) => {
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(date)) return false;
-        const parsedDate = new Date(date);
-        return parsedDate instanceof Date && !isNaN(parsedDate.getTime());
-      },
-      { error: "Please enter a valid date (YYYY-MM-DD)" }
-    ),
+  address: z.string().optional(),
+  dob: z.string().optional(),
 });
 
 export const businessOnlyDetailsSchema = z.object({

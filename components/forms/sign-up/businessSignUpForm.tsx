@@ -318,10 +318,10 @@ export default function BusinessSignUpForm({
       businessName: data.businessName,
       businessEmail: data.businessEmail,
       identificationType: data.identificationType,
-      idNumber: data.idNumber || "string",
-      position: data.position || "string",
-      businessAddress: data.businessAddress || data.address || "string",
-      displayPicture: (data as any).displayPicture || "string",
+      idNumber: data.idNumber || null,
+      position: data.position || null,
+      businessAddress: data.businessAddress || data.address || null,
+      displayPicture: (data as any).displayPicture || null,
       dob: typeof data.dob === "object" && data.dob instanceof Date
         ? `${String(data.dob.getMonth() + 1).padStart(2, "0")}/${String(data.dob.getDate()).padStart(2, "0")}/${data.dob.getFullYear()}`
         : String(data.dob || "mm/dd/yyyy"),

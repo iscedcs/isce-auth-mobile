@@ -50,8 +50,6 @@ export function UserDetailsForm({
         lastName: "",
         phoneNumber: "",
         email: "",
-        address: "",
-        dob: "",
         referralCode: "",
         ...defaultValues,
       } as UserDetailsFormData)

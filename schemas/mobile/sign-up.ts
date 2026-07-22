@@ -162,9 +162,9 @@ export const signUpForBusinessSchema = z.object({
   identificationType: z.enum(["NIN", "CAC", "TIN", "BVN"], {
     error: "Please select an identification type",
   }),
-  idNumber: z.string().optional(),
+  idNumber: z.string().min(1, "ID number is required"),
   position: z.string().optional(),
-  businessAddress: z.string().optional(),
+  businessAddress: z.string().min(1, "Business address is required"),
   referralCode: z.string().optional(),
 });
 
