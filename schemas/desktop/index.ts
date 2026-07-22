@@ -44,9 +44,72 @@ const individualUserDetailsSchema = baseUserDetailsSchema.extend({
   dob: z.string().optional(),
 });
 
+const FREE_EMAIL_DOMAINS = [
+  "gmail.com",
+  "yahoo.com",
+  "yahoo.co.uk",
+  "hotmail.com",
+  "hotmail.co.uk",
+  "outlook.com",
+  "aol.com",
+  "icloud.com",
+  "mail.com",
+  "zoho.com",
+  "protonmail.com",
+  "proton.me",
+  "yandex.com",
+  "live.com",
+  "msn.com",
+  "gmx.com",
+];
+
 const businessUserDetailsSchema = baseUserDetailsSchema.extend({
   userType: z.literal("BUSINESS_USER"),
+  businessName: z.string().optional(),
+  businessEmail: z
+    .string()
+    .email("Enter a valid business email address")
+    .refine(
+      (email) => {
+        if (!email) return true;
+        const domain = email.split("@")[1]?.toLowerCase().trim();
+        return domain ? !FREE_EMAIL_DOMAINS.includes(domain) : false;
+      },
+      {
+        message:
+          "Business email must be a business domain and not a normal email provider (e.g. Gmail, Yahoo)",
+      }
+    )
+    .optional(),
+  identificationType: z.string().optional(),
+  idNumber: z.string().optional(),
+  position: z.string().optional(),
+  businessAddress: z.string().optional(),
+  displayPicture: z.string().optional(),
+  address: z.string().optional(),
+  dob: z.string().optional(),
+});
 
+export const businessOnlyDetailsSchema = z.object({
+  businessName: z.string().min(1, "Business name is required"),
+  businessEmail: z
+    .string()
+    .email("Enter a valid business email address")
+    .refine(
+      (email) => {
+        if (!email) return true;
+        const domain = email.split("@")[1]?.toLowerCase().trim();
+        return domain ? !FREE_EMAIL_DOMAINS.includes(domain) : false;
+      },
+      {
+        message:
+          "Business email must be a business domain and not a normal email provider (e.g. Gmail, Yahoo)",
+      }
+    ),
+  identificationType: z.string().min(1, "Please select an identification type"),
+  idNumber: z.string().min(1, "ID number is required"),
+  position: z.string().optional(),
+  businessAddress: z.string().min(1, "Business address is required"),
   address: z
     .string({
       error: "This field cannot be empty",
@@ -70,6 +133,61 @@ const businessUserDetailsSchema = baseUserDetailsSchema.extend({
       { error: "Please enter a valid date (YYYY-MM-DD)" }
     ),
 });
+
+export type BusinessOnlyDetailsFormData = z.infer<typeof businessOnlyDetailsSchema>;
+
+export const companyDetailsSchema = z.object({
+  businessName: z.string().min(1, "Business name is required"),
+  businessEmail: z
+    .string()
+    .email("Enter a valid business email address")
+    .refine(
+      (email) => {
+        if (!email) return true;
+        const domain = email.split("@")[1]?.toLowerCase().trim();
+        return domain ? !FREE_EMAIL_DOMAINS.includes(domain) : false;
+      },
+      {
+        message:
+          "Business email must be a business domain and not a normal email provider (e.g. Gmail, Yahoo)",
+      }
+    ),
+  businessAddress: z.string().min(1, "Business address is required"),
+  position: z.string().optional(),
+});
+export type CompanyDetailsFormData = z.infer<typeof companyDetailsSchema>;
+
+export const identificationDetailsSchema = z.object({
+  identificationType: z.string().min(1, "Please select an identification type"),
+  idNumber: z.string().min(1, "ID number is required"),
+});
+export type IdentificationDetailsFormData = z.infer<typeof identificationDetailsSchema>;
+
+export const addressDobSchema = z.object({
+  address: z
+    .string({
+      error: "This field cannot be empty",
+    })
+    .min(2, {
+      error: "Address must be at least 2 characters.",
+    })
+    .max(100, {
+      error: "Address must not be longer than 100 characters.",
+    }),
+  dob: z
+    .string()
+    .min(2, { error: "Please enter a valid date of birth" })
+    .refine(
+      (date) => {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(date)) return false;
+        const parsedDate = new Date(date);
+        return parsedDate instanceof Date && !isNaN(parsedDate.getTime());
+      },
+      { error: "Please enter a valid date (YYYY-MM-DD)" }
+    ),
+});
+export type AddressDobFormData = z.infer<typeof addressDobSchema>;
 
 export const userDetailsSchema = z.discriminatedUnion("userType", [
   individualUserDetailsSchema,

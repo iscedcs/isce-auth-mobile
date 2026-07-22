@@ -315,13 +315,17 @@ export default function BusinessSignUpForm({
       lastName: data.lastName,
       phone: data.phoneNumber,
       email: data.email,
-      dob: data.dob,
-      address: data.address,
       businessName: data.businessName,
       businessEmail: data.businessEmail,
       identificationType: data.identificationType,
-      idNumber: data.idNumber ?? null,
-      position: data.position ?? null,
+      idNumber: data.idNumber || null,
+      position: data.position || null,
+      businessAddress: data.businessAddress || data.address || null,
+      displayPicture: (data as any).displayPicture || null,
+      dob: typeof data.dob === "object" && data.dob instanceof Date
+        ? `${String(data.dob.getMonth() + 1).padStart(2, "0")}/${String(data.dob.getDate()).padStart(2, "0")}/${data.dob.getFullYear()}`
+        : String(data.dob || "mm/dd/yyyy"),
+      address: data.address,
       password: data.passwordObj.password,
       confirmpassword: data.passwordObj.confirmPassword,
       referralCode:
@@ -464,7 +468,7 @@ export default function BusinessSignUpForm({
                     <Input
                       required
                       autoComplete="given-name"
-                      className="rounded-[12px] h-[50px] text-[16px]"
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
                       placeholder="e.g. John"
                       {...field}
                     />
@@ -485,7 +489,7 @@ export default function BusinessSignUpForm({
                     <Input
                       required
                       autoComplete="family-name"
-                      className="rounded-[12px] h-[50px] text-[16px]"
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
                       placeholder="e.g. Doe"
                       {...field}
                     />
@@ -508,7 +512,7 @@ export default function BusinessSignUpForm({
                       disabled={isReferralDisabled}
                       readOnly={isReferralDisabled}
                       autoComplete="off"
-                      className="rounded-[12px] h-[50px] text-[16px] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="e.g. johndoe"
                     />
                   </FormControl>
@@ -556,7 +560,7 @@ export default function BusinessSignUpForm({
                       type="email"
                       required
                       autoComplete="email"
-                      className="rounded-[12px] h-[50px] text-[16px]"
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
                       placeholder="you@example.com"
                       {...field}
                     />
@@ -597,7 +601,7 @@ export default function BusinessSignUpForm({
             <Input
               maxLength={6}
               inputMode="numeric"
-              className="rounded-[12px] h-[50px] text-[20px] tracking-widest text-center"
+              className="text-[20px] tracking-widest text-center outline-0 rounded-none border-l-0 border-r-0 border-t-0"
               placeholder="_ _ _ _ _ _"
               value={otpState}
               onChange={(e) =>
@@ -640,7 +644,7 @@ export default function BusinessSignUpForm({
                       type="tel"
                       required
                       autoComplete="tel"
-                      className="rounded-[12px] h-[50px] text-[16px]"
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
                       placeholder="e.g. 08012345678"
                       {...field}
                     />
@@ -713,7 +717,7 @@ export default function BusinessSignUpForm({
                       type="password"
                       required
                       autoComplete="new-password"
-                      className="rounded-[12px] h-[50px] text-[16px]"
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
                       placeholder="Min 8 chars, upper, lower, number"
                       {...field}
                       onChange={(e) => {
@@ -777,7 +781,7 @@ export default function BusinessSignUpForm({
                       type="password"
                       required
                       autoComplete="new-password"
-                      className="rounded-[12px] h-[50px] text-[16px]"
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
                       placeholder="Re-enter your password"
                       {...field}
                     />
@@ -822,7 +826,7 @@ export default function BusinessSignUpForm({
                     <Input
                       required
                       autoComplete="street-address"
-                      className="rounded-[12px] h-[50px] text-[16px]"
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
                       placeholder="e.g. 12 Lagos Street, Abuja"
                       {...field}
                     />
@@ -870,7 +874,7 @@ export default function BusinessSignUpForm({
                     <Input
                       type="date"
                       required
-                      className="rounded-[12px] h-[50px] text-[16px]"
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
                       max={new Date().toISOString().split("T")[0]}
                       value={
                         field.value instanceof Date
@@ -928,7 +932,7 @@ export default function BusinessSignUpForm({
                   <FormControl>
                     <Input
                       required
-                      className="rounded-[12px] h-[50px] text-[16px]"
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
                       placeholder="e.g. Acme Nigeria Ltd"
                       {...field}
                     />
@@ -948,7 +952,7 @@ export default function BusinessSignUpForm({
                     <Input
                       type="email"
                       required
-                      className="rounded-[12px] h-[50px] text-[16px]"
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
                       placeholder="contact@acme.com"
                       {...field}
                     />
@@ -966,7 +970,7 @@ export default function BusinessSignUpForm({
                   <Label>Identification type*</Label>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger className="rounded-[12px] h-[50px] text-[16px]">
+                      <SelectTrigger className="text-5 outline-0 rounded-none border-l-0 border-r-0 border-t-0">
                         <SelectValue placeholder="Select ID type" />
                       </SelectTrigger>
                     </FormControl>
@@ -978,6 +982,62 @@ export default function BusinessSignUpForm({
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="idNumber"
+              render={({ field }) => (
+                <FormItem className="mb-3">
+                  <Label>ID Number*</Label>
+                  <FormControl>
+                    <Input
+                      required
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
+                      placeholder="Enter ID number"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="businessAddress"
+              render={({ field }) => (
+                <FormItem className="mb-3">
+                  <Label>Business Address*</Label>
+                  <FormControl>
+                    <Input
+                      required
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
+                      placeholder="e.g. 12 Broad Street, Lagos"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="position"
+              render={({ field }) => (
+                <FormItem className="mb-3">
+                  <Label>Position / Role</Label>
+                  <FormControl>
+                    <Input
+                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
+                      placeholder="e.g. Managing Director"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

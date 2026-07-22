@@ -123,19 +123,48 @@ export const otpSchema = z.object({
   otp: z.string().max(7, { message: "OTP Code should be 6 characters" }),
 });
 
+const FREE_EMAIL_DOMAINS = [
+  "gmail.com",
+  "yahoo.com",
+  "yahoo.co.uk",
+  "hotmail.com",
+  "hotmail.co.uk",
+  "outlook.com",
+  "aol.com",
+  "icloud.com",
+  "mail.com",
+  "zoho.com",
+  "protonmail.com",
+  "proton.me",
+  "yandex.com",
+  "live.com",
+  "msn.com",
+  "gmx.com",
+];
+
 export const signUpForBusinessSchema = z.object({
   businessName: z
     .string({ error: "Business name is required" })
     .min(2, { message: "Business name must be at least 2 characters" }),
   businessEmail: z
     .string({ error: "Business email is required" })
-    .email({ message: "Enter a valid business email address" }),
+    .email({ message: "Enter a valid business email address" })
+    .refine(
+      (email) => {
+        const domain = email.split("@")[1]?.toLowerCase().trim();
+        return domain ? !FREE_EMAIL_DOMAINS.includes(domain) : false;
+      },
+      {
+        message:
+          "Business email must be a business domain and not a normal email provider (e.g. Gmail, Yahoo)",
+      }
+    ),
   identificationType: z.enum(["NIN", "CAC", "TIN", "BVN"], {
     error: "Please select an identification type",
   }),
-  idNumber: z.string().optional(),
+  idNumber: z.string().min(1, "ID number is required"),
   position: z.string().optional(),
-  businessAddress: z.string().optional(),
+  businessAddress: z.string().min(1, "Business address is required"),
   referralCode: z.string().optional(),
 });
 

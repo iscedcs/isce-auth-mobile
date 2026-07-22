@@ -14,6 +14,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { UserDetailsFormData, userDetailsSchema } from "@/schemas/desktop";
 
 interface UserDetailsFormProps {
@@ -43,8 +50,6 @@ export function UserDetailsForm({
         lastName: "",
         phoneNumber: "",
         email: "",
-        address: "",
-        dob: "",
         referralCode: "",
         ...defaultValues,
       } as UserDetailsFormData)
@@ -100,10 +105,6 @@ export function UserDetailsForm({
 
   return (
     <div className="space-y-6">
-      <p className="text-center text-gray-400 text-sm">
-        Enter your {isBusinessAccount ? "BUSINESS_USER" : ""} details
-      </p>
-
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit((data) =>
@@ -223,7 +224,7 @@ export function UserDetailsForm({
             )}
           />
 
-          {isBusinessAccount && (
+          {!isBusinessAccount && (
             <>
               <FormField
                 control={form.control}
@@ -231,12 +232,12 @@ export function UserDetailsForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-white">
-                      Enter your business address
+                      Enter your address
                     </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Business address"
+                        placeholder="Address"
                         className="bg-transparent border-0 border-b border-gray-600 rounded-none px-0 py-3 text-white placeholder:text-gray-500 focus:border-white focus-visible:ring-0"
                       />
                     </FormControl>
@@ -265,15 +266,15 @@ export function UserDetailsForm({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="userType"
-                render={({ field }) => (
-                  <input type="hidden" {...field} value={userType} />
-                )}
-              />
             </>
           )}
+          <FormField
+            control={form.control}
+            name="userType"
+            render={({ field }) => (
+              <input type="hidden" {...field} value={userType} />
+            )}
+          />
           <div className="flex items-center space-x-2 text-sm text-gray-400">
             <div className="w-2 h-2 bg-white rounded-full" />
             <span>
@@ -283,7 +284,7 @@ export function UserDetailsForm({
 
           <Button
             type="submit"
-            className="w-full bg-gray-600 hover:bg-gray-500 text-white py-3 rounded-lg">
+            className="w-full rounded-[12px] font-semibold py-[24px]">
             Continue
           </Button>
         </form>

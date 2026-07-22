@@ -4,7 +4,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AuthService } from '@/lib/auth-service';
 import { csrfFetch } from '@/lib/csrf-client';
 import { getSafeRedirect } from '@/lib/safe-redirect';
+import { BUSINESS_URL } from '@/lib/const';
 import {
+	AddressDobFormData,
+	BusinessOnlyDetailsFormData,
+	CompanyDetailsFormData,
+	IdentificationDetailsFormData,
 	OtpVerificationFormData,
 	PasswordCreationFormData,
 	UserDetailsFormData,
@@ -15,6 +20,9 @@ import { ArrowLeft, Loader2, Mail } from 'lucide-react';
 import { Input } from './ui/input';
 import { AuthLayout } from './forms/auth/auth-layout';
 import { AccountTypeForm } from './forms/auth/desktop/account-type-form';
+import { AddressDobForm } from './forms/auth/desktop/address-dob-form';
+import { CompanyDetailsForm } from './forms/auth/desktop/company-details-form';
+import { IdentificationDetailsForm } from './forms/auth/desktop/identification-details-form';
 import { OtpVerificationForm } from './forms/auth/desktop/otp-verification-form';
 import { PasswordCreationForm } from './forms/auth/desktop/password-creation-form';
 import { UserDetailsForm } from './forms/auth/desktop/user-details-form';
@@ -24,6 +32,10 @@ import { Button } from './ui/button';
 type SignupData = {
 	userType?: UserTypeFormData;
 	userDetails?: UserDetailsFormData;
+	companyDetails?: CompanyDetailsFormData;
+	identificationDetails?: IdentificationDetailsFormData;
+	addressDobDetails?: AddressDobFormData;
+	businessDetails?: BusinessOnlyDetailsFormData;
 	otpVerification?: OtpVerificationFormData;
 	passwordCreation?: PasswordCreationFormData;
 };
@@ -163,27 +175,76 @@ export default function SignUpClient({ callbackUrl }: Props) {
 			setIsLoading(false);
 		}
 
-		let userDetails: SignupData['userDetails'];
+		let userDetails: any;
 
 		if ((signupData.userType?.userType || 'USER') === 'BUSINESS_USER') {
 			userDetails = {
 				...data,
 				userType: 'BUSINESS_USER' as const,
-				address: data.address ?? '',
-				dob: data.dob ?? '',
 			};
+			setSignupData((prev) => ({
+				...prev,
+				userDetails,
+			}));
+			setCurrentStep(3);
 		} else {
 			userDetails = {
 				...data,
 				userType: 'USER' as const,
-				dob: data.dob ?? '',
+				dob: (data as any).dob ?? '',
 			};
+			setSignupData((prev) => ({
+				...prev,
+				userDetails,
+			}));
+			setCurrentStep(3);
 		}
+	};
+
+	const handleCompanyDetailsSubmit = (data: CompanyDetailsFormData) => {
 		setSignupData((prev) => ({
 			...prev,
-			userDetails,
+			companyDetails: data,
 		}));
-		setCurrentStep(3);
+		setCurrentStep(4);
+	};
+
+	const handleIdentificationSubmit = (data: IdentificationDetailsFormData) => {
+		setSignupData((prev) => ({
+			...prev,
+			identificationDetails: data,
+		}));
+		setCurrentStep(5);
+	};
+
+	const handleAddressDobSubmit = (data: AddressDobFormData) => {
+		setSignupData((prev) => {
+			const businessOnly: BusinessOnlyDetailsFormData = {
+				...(prev.companyDetails || {
+					businessName: '',
+					businessEmail: '',
+					businessAddress: '',
+				}),
+				...(prev.identificationDetails || {
+					identificationType: '',
+					idNumber: '',
+				}),
+				...data,
+			} as any;
+			return {
+				...prev,
+				addressDobDetails: data,
+				businessDetails: businessOnly,
+				userDetails: prev.userDetails
+					? ({
+							...prev.userDetails,
+							...businessOnly,
+							userType: 'BUSINESS_USER' as const,
+						} as any)
+					: undefined,
+			};
+		});
+		setCurrentStep(6);
 	};
 
 	const handleOtpVerificationSubmit = async (
@@ -196,7 +257,11 @@ export default function SignUpClient({ callbackUrl }: Props) {
 		}
 		if (!signupData.passwordCreation?.password) {
 			toast.error('Password not found. Please set your password first.');
-			setCurrentStep(3);
+			setCurrentStep(
+				(signupData.userType?.userType || 'USER') === 'BUSINESS_USER'
+					? 6
+					: 3,
+			);
 			return;
 		}
 
@@ -287,6 +352,9 @@ export default function SignUpClient({ callbackUrl }: Props) {
 
 			toast.success('Welcome! Redirecting...');
 
+			const isBusinessAccount =
+				(signupData.userType?.userType || 'USER') === 'BUSINESS_USER';
+
 			if (isRealCallback && accessToken) {
 				// Use server-side launch to avoid exposing token to JS and redirect to callback url
 				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(finalCallback)}`;
@@ -295,6 +363,12 @@ export default function SignUpClient({ callbackUrl }: Props) {
 			}
 			if (isRealCallback) {
 				window.location.href = finalCallback;
+				return;
+			}
+			if (isBusinessAccount) {
+				const businessTarget = BUSINESS_URL;
+				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(businessTarget)}`;
+				window.location.href = launchUrl;
 				return;
 			}
 			const refCode =
@@ -348,7 +422,11 @@ export default function SignUpClient({ callbackUrl }: Props) {
 				'Details saved! Please check your email for verification code.',
 				{ id: 'desktop-otp-request' },
 			);
-			setCurrentStep(4);
+			setCurrentStep(
+				(signupData.userType?.userType || 'USER') === 'BUSINESS_USER'
+					? 7
+					: 4,
+			);
 		} catch (error) {
 			console.error('Complete signup error:', error);
 			toast.error('An unexpected error occurred. Please try again.', {
@@ -446,15 +524,26 @@ export default function SignUpClient({ callbackUrl }: Props) {
 	};
 
 	const getStepTitle = () => {
+		const isBusiness = selectedUserType === 'BUSINESS_USER';
 		switch (currentStep) {
 			case 1:
 				return 'Please Select your account type';
 			case 2:
-				return 'Enter your details';
+				return 'Enter your personal details';
 			case 3:
-				return 'Set your password to your account';
+				return isBusiness
+					? 'Enter your company details'
+					: 'Set your password to your account';
 			case 4:
-				return 'Enter the OTP code sent to your mail';
+				return isBusiness
+					? 'Enter identification details'
+					: 'Enter the OTP code sent to your mail';
+			case 5:
+				return isBusiness ? 'Enter your address and date of birth' : '';
+			case 6:
+				return isBusiness ? 'Set your password to your account' : '';
+			case 7:
+				return isBusiness ? 'Enter the OTP code sent to your mail' : '';
 			default:
 				return '';
 		}
@@ -463,6 +552,7 @@ export default function SignUpClient({ callbackUrl }: Props) {
 	const selectedUserType = signupData.userType?.userType;
 
 	const renderCurrentStep = () => {
+		const isBusiness = selectedUserType === 'BUSINESS_USER';
 		switch (currentStep) {
 			case 1:
 				return (
@@ -487,6 +577,15 @@ export default function SignUpClient({ callbackUrl }: Props) {
 					/>
 				);
 			case 3:
+				if (isBusiness) {
+					return (
+						<CompanyDetailsForm
+							onSubmit={handleCompanyDetailsSubmit}
+							defaultValues={signupData.companyDetails}
+							isLoading={isLoading}
+						/>
+					);
+				}
 				return (
 					<PasswordCreationForm
 						onSubmit={handlePasswordCreationSubmit}
@@ -495,6 +594,15 @@ export default function SignUpClient({ callbackUrl }: Props) {
 					/>
 				);
 			case 4:
+				if (isBusiness) {
+					return (
+						<IdentificationDetailsForm
+							onSubmit={handleIdentificationSubmit}
+							defaultValues={signupData.identificationDetails}
+							isLoading={isLoading}
+						/>
+					);
+				}
 				return (
 					<OtpVerificationForm
 						onSubmit={handleOtpVerificationSubmit}
@@ -503,6 +611,40 @@ export default function SignUpClient({ callbackUrl }: Props) {
 						isLoading={isLoading}
 					/>
 				);
+			case 5:
+				if (isBusiness) {
+					return (
+						<AddressDobForm
+							onSubmit={handleAddressDobSubmit}
+							defaultValues={signupData.addressDobDetails}
+							isLoading={isLoading}
+						/>
+					);
+				}
+				return null;
+			case 6:
+				if (isBusiness) {
+					return (
+						<PasswordCreationForm
+							onSubmit={handlePasswordCreationSubmit}
+							defaultValues={signupData.passwordCreation}
+							isLoading={isLoading}
+						/>
+					);
+				}
+				return null;
+			case 7:
+				if (isBusiness) {
+					return (
+						<OtpVerificationForm
+							onSubmit={handleOtpVerificationSubmit}
+							onResendCode={handleResendCode}
+							defaultValues={signupData.otpVerification}
+							isLoading={isLoading}
+						/>
+					);
+				}
+				return null;
 			default:
 				return null;
 		}
@@ -511,7 +653,7 @@ export default function SignUpClient({ callbackUrl }: Props) {
 	return (
 		<AuthLayout
 			currentStep={emailStep ? 0 : currentStep}
-			totalSteps={5}
+			totalSteps={selectedUserType === 'BUSINESS_USER' ? 7 : 4}
 			cardImages={cardImages}
 			currentSlide={current}
 			setCurrentSlide={setCurrent}
@@ -560,14 +702,14 @@ export default function SignUpClient({ callbackUrl }: Props) {
 							onKeyDown={(e) => {
 								if (e.key === 'Enter') handleEmailContinue();
 							}}
-							className='bg-transparent border-gray-600 text-white placeholder:text-gray-500'
+							className='bg-transparent border-0 border-b border-gray-600 rounded-none px-0 py-3 text-white placeholder:text-gray-500 focus:border-white focus-visible:ring-0'
 							disabled={emailLoading}
 						/>
 						<Button
 							type='button'
 							onClick={handleEmailContinue}
 							disabled={emailLoading}
-							className='w-full'
+							className='w-full rounded-[12px] font-semibold py-[24px]'
 						>
 							{emailLoading ? (
 								<Loader2 className='animate-spin h-4 w-4' />
