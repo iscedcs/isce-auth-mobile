@@ -2,6 +2,7 @@ import SignUpDesktop from "@/components/auth/desktop/signUpDesktop";
 import SignUpMobile from "@/components/auth/mobile/signUpMobile";
 import Responsive from "@/components/shared/responsive";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Sign Up",
@@ -17,15 +18,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function SignUpPage({
+export default async function SignUpPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const params = await searchParams;
+
   return (
     <Responsive
-      desktop={<SignUpDesktop searchParams={searchParams} />}
-      mobile={<SignUpMobile searchParams={searchParams} />}
+      desktop={<SignUpDesktop searchParams={Promise.resolve(params)} />}
+      mobile={
+        <Suspense fallback={null}>
+          <SignUpMobile searchParams={Promise.resolve(params)} />
+        </Suspense>
+      }
     />
   );
 }

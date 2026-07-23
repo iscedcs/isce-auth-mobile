@@ -37,6 +37,24 @@ export default function SignUpMobile({
   const [userType, setUserType] = useState<userType>("USER");
   const [stepNumber, setStepNumber] = useState(1);
 
+  // ─── Referral code ───────────────────────────────────────────────────────
+  // Canonical referral extraction: read from URL params (any alias), persist to
+  // sessionStorage so the code survives navigation, then pass down as a prop.
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fromUrl =
+      singleProduct.get("ref") ||
+      singleProduct.get("referralCode") ||
+      singleProduct.get("referralUsername");
+    const fromStorage = sessionStorage.getItem("referral_code");
+    const code = fromUrl?.trim() || fromStorage?.trim() || null;
+    if (code) {
+      sessionStorage.setItem("referral_code", code);
+      setReferralCode(code);
+    }
+  }, [singleProduct]);
+
   // If an email was passed via URL param, pre-fill and skip the email step
   useEffect(() => {
     const urlEmail = singleProduct.get("email");
@@ -50,7 +68,10 @@ export default function SignUpMobile({
     try {
       const sp = new URLSearchParams(window.location.search);
       const raw =
-        sp.get("callbackUrl") ?? sp.get("redirect") ?? sp.get("redirect_uri");
+        sp.get("callbackUrl") ??
+        sp.get("redirect") ??
+        sp.get("redirect_uri") ??
+        sp.get("url");
       return getSafeRedirect(raw) || null;
     } catch {
       return null;
@@ -85,7 +106,14 @@ export default function SignUpMobile({
           description:
             "An account with this email already exists. Redirecting you to sign in…",
         });
-        router.push(`/sign-in?email=${encodeURIComponent(preEmail.trim())}`);
+        // Only carry the email and any app redirect — NOT the referral code.
+        // Referrals only apply to net-new users; an existing user signing in
+        // should never trigger a referral reward.
+        const signInParams = new URLSearchParams();
+        signInParams.set("email", preEmail.trim());
+        const redirectHint = sessionStorage.getItem("redirect_hint");
+        if (redirectHint) signInParams.set("redirect", redirectHint);
+        router.push(`/sign-in?${signInParams.toString()}`);
         return;
       }
       setEmailStep(false);
@@ -212,9 +240,10 @@ export default function SignUpMobile({
             <p className="font-extrabold text-[24px]">Select an account type</p>
             <div className="flex flex-col gap-5">
               <Card
+                onClick={handleIndividual}
                 className={` ${
                   individual ? " border-[0.5]" : " border-0"
-                } py-2.5 px-[15px] flex flex-row rounded-[12px]`}
+                } py-2.5 px-[15px] flex flex-row rounded-[12px] cursor-pointer`}
               >
                 <CardContent className="">
                   <p className="font-bold text-white text-5">Individual</p>
@@ -227,6 +256,26 @@ export default function SignUpMobile({
                   <Checkbox
                     checked={individual}
                     onClick={() => handleIndividual()}
+                  />
+                </div>
+              </Card>
+              <Card
+                onClick={handleBusiness}
+                className={` ${
+                  business ? " border-[0.5]" : " border-0"
+                } py-2.5 px-[15px] flex flex-row rounded-[12px] cursor-pointer`}
+              >
+                <CardContent className="">
+                  <p className="font-bold text-white text-5">Business</p>
+                  <p className="text-[14px] text-white">
+                    {`Ideal for businesses. Includes advanced features and
+                    requires additional business information.`}
+                  </p>
+                </CardContent>
+                <div className="">
+                  <Checkbox
+                    checked={business}
+                    onClick={() => handleBusiness()}
                   />
                 </div>
               </Card>
@@ -243,6 +292,7 @@ export default function SignUpMobile({
             setStep={setStep}
             getRedirect={getRedirect}
             prefillEmail={preEmail}
+            referralCode={referralCode}
             onBackFromFirst={() => setStep(15)}
           />
         ) : userType === "BUSINESS_USER" ? (
@@ -253,6 +303,7 @@ export default function SignUpMobile({
             setStep={setStep}
             getRedirect={getRedirect}
             prefillEmail={preEmail}
+            referralCode={referralCode}
             onBackFromFirst={() => setStep(15)}
           />
         ) : (
@@ -263,6 +314,7 @@ export default function SignUpMobile({
             setStep={setStep}
             getRedirect={getRedirect}
             prefillEmail={preEmail}
+            referralCode={referralCode}
             onBackFromFirst={() => setStep(15)}
           />
         )}

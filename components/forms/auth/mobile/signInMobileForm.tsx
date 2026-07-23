@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthService } from '@/lib/auth-service';
 import { authLogger } from '@/lib/auth-logger';
+import { BUSINESS_URL } from '@/lib/const';
 import { csrfFetch } from '@/lib/csrf-client';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 import { signInFormSchema } from '@/schemas/mobile/sign-in';
@@ -191,12 +192,13 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 				return;
 			}
 
-			const { accessToken, refreshToken, firstName } = result.data;
+			const { accessToken, refreshToken, firstName, userType } = result.data;
 
 			authLogger.log('MOBILE-SIGNIN', `[${flow}] Step 1 data extracted`, {
 				hasAccessToken: !!accessToken,
 				hasRefreshToken: !!refreshToken,
 				firstName: firstName || 'empty',
+				userType: userType || 'unknown',
 			});
 
 			if (!accessToken) {
@@ -268,7 +270,20 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 				},
 			);
 
-			if (safe && accessToken) {
+			const isBusinessUser =
+				userType === 'BUSINESS_USER' ||
+				userType === 'BUSINESS' ||
+				userType?.toUpperCase() === 'BUSINESS_USER' ||
+				userType?.toUpperCase() === 'BUSINESS';
+
+			const isDashboardRedirect =
+				safe &&
+				(safe === '/' ||
+					safe === window.location.origin + '/' ||
+					safe.startsWith('/dashboard') ||
+					safe.startsWith(window.location.origin + '/dashboard'));
+
+			if (safe && accessToken && !isDashboardRedirect) {
 				// Use server-side launch to avoid exposing token to JS
 				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(safe)}`;
 				authLogger.log(
@@ -282,15 +297,30 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 				window.location.href = launchUrl;
 				return;
 			}
+
+			if (isBusinessUser) {
+				const businessTarget = BUSINESS_URL;
+				const launchUrl = `/api/auth/launch?url=${encodeURIComponent(businessTarget)}`;
+				authLogger.log(
+					'MOBILE-SIGNIN',
+					`[${flow}] Business user sign-in: launching to ${businessTarget}`,
+				);
+				window.location.href = launchUrl;
+				return;
+			}
+
+			const targetUrl = safe && isDashboardRedirect && safe !== '/' && safe !== window.location.origin + '/'
+				? safe
+				: '/dashboard';
 			authLogger.log(
 				'MOBILE-SIGNIN',
-				`[${flow}] No callback — pushing to /dashboard`,
+				`[${flow}] Pushing to ${targetUrl}`,
 			);
 			authLogger.log(
 				'MOBILE-SIGNIN',
 				`[${flow}] === Sign-in flow complete (dashboard) === totalMs=${elapsed()}`,
 			);
-			router.push('/dashboard');
+			router.push(targetUrl);
 		} catch (e) {
 			authLogger.error(
 				'MOBILE-SIGNIN',

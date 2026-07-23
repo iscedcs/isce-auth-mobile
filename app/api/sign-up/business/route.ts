@@ -1,6 +1,7 @@
 "use server";
 
 import { AUTH_API, URLS } from "@/lib/const";
+import { AuthService } from "@/lib/auth-service";
 import { extendedSignUpSchema } from "@/schemas/mobile/sign-up";
 import { NextResponse } from "next/server";
 
@@ -25,15 +26,18 @@ export async function POST(req: Request) {
       lastName: b.lastName,
       phone: b.phoneNumber,
       email: b.email,
-      dob: b.dob,
-      address: b.address,
       businessName: b.businessName,
       businessEmail: b.businessEmail,
       identificationType: b.identificationType,
-      idNumber: b.idNumber ?? null,
-      position: b.position ?? null,
+      idNumber: b.idNumber || raw.idNumber || null,
+      position: b.position || raw.position || null,
+      businessAddress: b.businessAddress || raw.businessAddress || b.address || null,
+      displayPicture: raw.displayPicture || raw.profilePhoto || null,
+      dob: (typeof raw.dob === "string" && raw.dob) || (b.dob ? `${String(b.dob.getMonth() + 1).padStart(2, '0')}/${String(b.dob.getDate()).padStart(2, '0')}/${b.dob.getFullYear()}` : null),
+      address: b.address,
       password: b.passwordObj.password,
       confirmpassword: b.passwordObj.confirmPassword,
+      referralCode: b.referralCode || raw.referralCode || raw.referralUsername || null,
     };
 
     const url = `${AUTH_API}${URLS.auth.sign_up_business}`;
@@ -50,6 +54,29 @@ export async function POST(req: Request) {
         { error: "Failed to create business account", details: data },
         { status: res.status || 400 },
       );
+    }
+
+    const userData = data?.data || data?.user || data;
+    const newUserId =
+      userData?.id ||
+      userData?.userId ||
+      userData?._id ||
+      userData?.user_id ||
+      data?.id ||
+      data?.userId ||
+      data?._id ||
+      data?.user_id ||
+      null;
+    const referralUsername = payload.referralCode || null;
+
+    if (newUserId && referralUsername) {
+      const attachRes = await AuthService.attachReferral({
+        newUserId: String(newUserId),
+        referralUsername: String(referralUsername).trim(),
+      });
+      console.log("Business referral attach attempt result:", attachRes);
+    } else if (referralUsername) {
+      console.warn("Skipping attachReferral because newUserId could not be found in business response data:", data);
     }
 
     return NextResponse.json(data);

@@ -68,11 +68,20 @@ interface CompleteSignupData {
   lastName: string;
   email: string;
   phone: string; // Note: backend expects 'phone', not 'phoneNumber'
-  userType: string;
-  address: string;
-  dob: string;
+  userType?: string | null;
+  address?: string | null;
+  dob?: string | null;
   password: string;
   confirmpassword: string; // Note: backend expects 'confirmpassword', not 'confirmPassword'
+  referralCode?: string | null;
+  referralUsername?: string | null;
+  businessName?: string | null;
+  businessEmail?: string | null;
+  identificationType?: string | null;
+  idNumber?: string | null;
+  position?: string | null;
+  businessAddress?: string | null;
+  displayPicture?: string | null;
 }
 
 export class AuthService {
@@ -219,8 +228,10 @@ export class AuthService {
       );
       return { exists: !!response.data?.data?.exists };
     } catch {
-      // On network error, assume email might exist to avoid blocking login
-      return { exists: true };
+      // On network error, allow the user to proceed — the sign-up endpoint
+      // itself will reject duplicate emails, so blocking here just causes
+      // legitimate new users to be wrongly turned away.
+      return { exists: false };
     }
   }
 
@@ -280,27 +291,52 @@ export class AuthService {
     userDetails: UserDetailsFormData,
     passwordData: PasswordCreationFormData,
   ): Promise<SignupResponse> {
-    const url = `${this.baseUrl}${URLS.auth.sign_up}`;
+    const isBusiness = userDetails.userType === "BUSINESS_USER";
+    const url = isBusiness
+      ? `${this.baseUrl}${URLS.auth.sign_up_business}`
+      : `${this.baseUrl}${URLS.auth.sign_up}`;
 
     try {
+      const referralUsername =
+        userDetails.referralCode ||
+        (typeof sessionStorage !== "undefined"
+          ? sessionStorage.getItem("referral_code") || undefined
+          : undefined);
+
       // Prepare payload based on account type
-      const payload: CompleteSignupData = {
-        firstName: userDetails.firstName,
-        lastName: userDetails.lastName,
-        email: userDetails.email,
-        phone: userDetails.phoneNumber,
-        userType: userDetails.userType,
-        address:
-          userDetails.userType === "BUSINESS_USER"
-            ? userDetails.address!
-            : "N/A",
-        dob:
-          userDetails.userType === "BUSINESS_USER"
-            ? userDetails.dob!
-            : "1990-01-01", // Default DOB for individual
-        password: passwordData.password,
-        confirmpassword: passwordData.password,
-      };
+      const payload: CompleteSignupData = isBusiness
+        ? {
+            firstName: userDetails.firstName,
+            lastName: userDetails.lastName,
+            phone: userDetails.phoneNumber,
+            email: userDetails.email,
+            businessName: (userDetails as any).businessName || `${userDetails.firstName} Business`,
+            businessEmail: (userDetails as any).businessEmail || userDetails.email,
+            identificationType: (userDetails as any).identificationType || "CAC",
+            idNumber: (userDetails as any).idNumber || null,
+            position: (userDetails as any).position || null,
+            businessAddress: (userDetails as any).businessAddress || userDetails.address || null,
+            displayPicture: (userDetails as any).displayPicture || null,
+            dob: userDetails.dob || null,
+            address: userDetails.address || "12 Broad Street, Lagos",
+            password: passwordData.password,
+            confirmpassword: passwordData.password,
+            referralCode: referralUsername,
+            referralUsername: referralUsername,
+          }
+        : {
+            firstName: userDetails.firstName,
+            lastName: userDetails.lastName,
+            email: userDetails.email,
+            phone: userDetails.phoneNumber,
+            userType: userDetails.userType,
+            address: userDetails.address || "N/A",
+            dob: userDetails.dob || "1990-01-01", // Default DOB for individual
+            password: passwordData.password,
+            confirmpassword: passwordData.password,
+            referralCode: referralUsername,
+            referralUsername: referralUsername,
+          };
 
       // console.log("Sending complete signup payload:", payload);
 
@@ -312,22 +348,61 @@ export class AuthService {
       });
 
       // console.log("Signup response:", response.data);
+      const userData = response.data.data || response.data.user || response.data;
+      const newUserId =
+        userData?.id ||
+        userData?.userId ||
+        userData?._id ||
+        userData?.user_id ||
+        response.data.id ||
+        response.data.userId ||
+        response.data._id ||
+        response.data.user_id ||
+        null;
+
+      if (newUserId && referralUsername) {
+        if (typeof window === "undefined") {
+          await AuthService.attachReferral({
+            newUserId: String(newUserId),
+            referralUsername: referralUsername.trim(),
+          });
+        } else {
+          fetch("/api/referral/attach", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              newUserId: String(newUserId),
+              referralUsername: referralUsername.trim(),
+            }),
+          }).catch((e) => console.error("Client referral attach error:", e));
+        }
+      } else if (referralUsername) {
+        console.warn("Could not extract newUserId from signup response to attach referral:", response.data);
+      }
 
       return {
         success: true,
         message: response.data.message || "Account created successfully",
-        data: response.data.data || response.data.user,
+        data: userData,
       };
     } catch (error: any) {
       console.error("Signup error:", error.response?.data || error.message);
 
+      const msg = error.response?.data?.message;
+      let formattedMsg = "Failed to create account";
+      if (Array.isArray(msg)) {
+        formattedMsg = msg.filter(Boolean).join(", ");
+      } else if (typeof msg === "string" && msg.trim()) {
+        formattedMsg = msg;
+      } else if (typeof error.response?.data?.error === "string") {
+        formattedMsg = error.response.data.error;
+      } else if (error.message && typeof error.message === "string") {
+        formattedMsg = error.message;
+      }
+
       return {
         success: false,
-        message:
-          error.response?.data?.message ||
-          Array.isArray(error.response?.data?.message)
-            ? error.response.data.message.join(", ")
-            : "Failed to create account",
+        message: formattedMsg,
       };
     }
   }
@@ -635,6 +710,48 @@ export class AuthService {
       return null;
     }
   }
+
+  static async attachReferral({
+    newUserId,
+    referralUsername,
+  }: {
+    newUserId: string;
+    referralUsername: string;
+  }) {
+    const url = `${this.baseUrl}${URLS.internal.referral_attach}`;
+    try {
+      console.log(`Attaching referral '${referralUsername}' to newUserId '${newUserId}'`);
+      const response = await axios.post(
+        url,
+        {
+          newUserId,
+          referralUsername: referralUsername.trim(),
+        },
+        {
+          timeout: 10000,
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-key": process.env.INTERNAL_API_KEY || "",
+          },
+        }
+      );
+      console.log("Referral attached response:", response.data);
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error(
+        "Attach referral error:",
+        error.response?.data || error.message
+      );
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Failed to attach referral code",
+      };
+    }
+  }
 }
 
 // Export individual functions for easier use
@@ -649,4 +766,5 @@ export const {
 	validateResetCode,
 	getUserProfile,
 	quickRegister,
+	attachReferral,
 } = AuthService;

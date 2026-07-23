@@ -46,7 +46,7 @@ function AuthLayoutInner({
 	useEffect(() => {
 		if (!isLoggedIn) return;
 
-		const restricted = ['/sign-in', '/sign-up', '/register'];
+		const restricted = ['/sign-in', '/sign-up', '/signup', '/register'];
 
 		const isRestricted = restricted.includes(pathname);
 

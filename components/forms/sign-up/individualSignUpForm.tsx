@@ -51,6 +51,7 @@ export default function IndividualSignUpForm({
 	setStepNumber,
 	getRedirect,
 	prefillEmail,
+	referralCode: referralCodeProp,
 	onBackFromFirst,
 }: {
 	stepNumber: number;
@@ -59,15 +60,12 @@ export default function IndividualSignUpForm({
 	setStep: React.Dispatch<React.SetStateAction<number>>;
 	getRedirect: () => string;
 	prefillEmail?: string;
+	/** Referral code passed down from the parent orchestrator (signUpMobile). */
+	referralCode?: string | null;
 	onBackFromFirst?: () => void;
 }) {
 	const sp = useSearchParams();
 
-	// Save redirect during onboarding
-	useEffect(() => {
-		const safe = getSafeRedirect(sp.get('redirect'));
-		if (safe) sessionStorage.setItem('redirect_hint', safe);
-	}, [sp]);
 
 	const userType: userType = 'USER';
 	const [isOtpScreen, setIsOtpScreen] = useState(false);
@@ -97,6 +95,7 @@ export default function IndividualSignUpForm({
 			firstName: '',
 			lastName: '',
 			address: '',
+			referralCode: '',
 			passwordObj: {
 				password: '',
 				confirmPassword: '',
@@ -113,13 +112,42 @@ export default function IndividualSignUpForm({
 		mode: 'all',
 	});
 
-	const email = form.watch('email');
+	const [isReferralDisabled, setIsReferralDisabled] = useState(false);
+	// When email comes from the parent's pre-step, lock it so the user can't
+	// change it mid-flow (they already verified it's a new address up there).
+	const [isEmailPrefilled, setIsEmailPrefilled] = useState(false);
+
+	// Save redirect and referral during onboarding
+	useEffect(() => {
+		const safe = getSafeRedirect(sp.get('redirect'));
+		if (safe) sessionStorage.setItem('redirect_hint', safe);
+
+		// Priority: prop from parent > URL param > sessionStorage fallback
+		const fromUrl =
+			sp.get('ref') ||
+			sp.get('referralCode') ||
+			sp.get('referralUsername');
+		const fromStorage = sessionStorage.getItem('referral_code');
+		const refCode = referralCodeProp?.trim() || fromUrl?.trim() || fromStorage?.trim() || null;
+
+		if (refCode) {
+			// Persist so the code survives any subsequent navigation
+			sessionStorage.setItem('referral_code', refCode);
+			setIsReferralDisabled(true);
+			if (!form.getValues('referralCode')) {
+				form.setValue('referralCode', refCode);
+			}
+		}
+	}, [sp, form, referralCodeProp]);
+
 	// Pre-fill email from parent if provided (e.g. from email-first pre-step)
 	useEffect(() => {
 		if (prefillEmail) {
 			form.setValue('email', prefillEmail);
+			setIsEmailPrefilled(true);
 		}
 	}, [prefillEmail, form]);
+	const email = form.watch('email');
 	const otpWatch = otpForm.watch('otp');
 	const code = otpForm.getValues('otp');
 	const passwordValues = form.watch('passwordObj.password');
@@ -624,6 +652,10 @@ export default function IndividualSignUpForm({
 			address: data.address,
 			password: data.passwordObj.password,
 			confirmpassword: data.passwordObj.confirmPassword,
+			referralCode:
+				data.referralCode?.trim() ||
+				sessionStorage.getItem('referral_code') ||
+				null,
 			isce_permissions: {
 				connect: true,
 				connect_plus: true,
@@ -675,17 +707,36 @@ export default function IndividualSignUpForm({
 
 					toast.success("You're In!");
 					const safe = getSafeRedirect(getRedirect());
+					const isRealCallback =
+						safe &&
+						safe !== '/' &&
+						safe !== window.location.origin + '/' &&
+						!safe.startsWith('/dashboard') &&
+						!safe.startsWith(window.location.origin + '/dashboard');
 					setIsBuidlingProfile(true);
 
 					setTimeout(() => {
-						if (safe && token) {
-							// Use server-side launch to avoid exposing token to JS
+						if (isRealCallback && token) {
+							// Use server-side launch to avoid exposing token to JS and redirect to callback url
 							const launchUrl = `/api/auth/launch?url=${encodeURIComponent(safe)}`;
 							window.location.href = launchUrl;
 							return;
 						}
+						if (isRealCallback) {
+							window.location.href = safe;
+							return;
+						}
 
-						window.location.href = '/dashboard';
+						const refCode =
+							payload.referralCode ||
+							(typeof sessionStorage !== 'undefined'
+								? sessionStorage.getItem('referral_code')
+								: null) ||
+							null;
+						const dashboardUrl = refCode
+							? `/dashboard?referralCode=${encodeURIComponent(refCode)}`
+							: (safe && (safe.startsWith('/dashboard') || safe.startsWith(window.location.origin + '/dashboard')) ? safe : '/dashboard');
+						window.location.href = dashboardUrl;
 					}, 1500);
 
 					return;
@@ -693,8 +744,23 @@ export default function IndividualSignUpForm({
 
 				// If auto sign-in fails, fall back to explicit login
 				const r = getRedirect();
+				const refCode =
+					payload.referralCode ||
+					(typeof sessionStorage !== 'undefined'
+						? sessionStorage.getItem('referral_code')
+						: null) ||
+					null;
+				const redirectUrl =
+					r === '/' ||
+					r === '/dashboard' ||
+					r === window.location.origin + '/' ||
+					r === window.location.origin + '/dashboard'
+						? refCode
+							? `/dashboard?referralCode=${encodeURIComponent(refCode)}`
+							: '/dashboard'
+						: r;
 				toast.success('Account created! Please sign in.');
-				window.location.href = `/sign-in?redirect=${encodeURIComponent(r)}`;
+				window.location.href = `/sign-in?redirect=${encodeURIComponent(redirectUrl)}`;
 				return responseData;
 			}
 
@@ -775,6 +841,27 @@ export default function IndividualSignUpForm({
 								</FormItem>
 							)}
 						/>
+						<FormField
+							control={form.control}
+							name='referralCode'
+							render={({ field }) => (
+								<FormItem className=' mt-5'>
+									<Label className=' mt-2.5 font-extrabold text-[24px]'>
+										Referral username (optional)
+									</Label>
+									<FormControl>
+										<Input
+											{...field}
+											disabled={isReferralDisabled}
+											readOnly={isReferralDisabled}
+											placeholder='e.g. johndoe'
+											className=' text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 disabled:opacity-50 disabled:cursor-not-allowed'
+										/>
+									</FormControl>
+									<FormMessage className=' text-accent' />
+								</FormItem>
+							)}
+						/>
 					</div>
 				</SlideStep>
 
@@ -806,7 +893,9 @@ export default function IndividualSignUpForm({
 										<Input
 											required
 											{...field}
-											className=' text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 '
+											disabled={isEmailPrefilled}
+											readOnly={isEmailPrefilled}
+											className=' text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 disabled:opacity-70 disabled:cursor-not-allowed'
 										/>
 									</FormControl>
 									<FormMessage className=' text-accent' />

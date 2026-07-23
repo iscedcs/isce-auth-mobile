@@ -1,3 +1,5 @@
+"use client";
+
 import type React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,10 +30,10 @@ export function AuthLayout({
     searchParams.get("redirect") ||
     searchParams.get("returnTo") ||
     searchParams.get("redirect_uri");
-  const prompt = searchParams.get("prompt") === "login" ? "&prompt=login" : "";
-  const signUpHref = redirectParam
-    ? `/sign-in?redirect=${encodeURIComponent(redirectParam)}${prompt}`
-    : "/";
+  const promptParam = searchParams.get("prompt") === "login" ? "prompt=login" : "";
+  const signInHref = redirectParam
+    ? `/sign-in?redirect=${encodeURIComponent(redirectParam)}${promptParam ? '&' + promptParam : ''}`
+    : `/sign-in${promptParam ? '?' + promptParam : ''}`;
   return (
     <div className="h-[100svh] border-6 border-white bg-black flex  overflow-hidden">
       {/* Left Panel */}
@@ -113,7 +115,7 @@ export function AuthLayout({
           <button className="text-2xl font-bold">||</button>
           <span className="text-gray-400 text-sm">
             Already have an account?{" "}
-            <Link href={signUpHref} className="text-white underline">
+            <Link href={signInHref} className="text-white underline">
               Login
             </Link>
           </span>
