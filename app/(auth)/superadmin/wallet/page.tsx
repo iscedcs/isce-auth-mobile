@@ -89,6 +89,7 @@ export default function SuperAdminWalletPage() {
 	const [loadingTerminals, setLoadingTerminals] = useState(false);
 	const [selectedTerminalId, setSelectedTerminalId] = useState('');
 	const [assigningTerminal, setAssigningTerminal] = useState(false);
+	const [unassigningTerminalId, setUnassigningTerminalId] = useState<string | null>(null);
 	const [terminalError, setTerminalError] = useState('');
 
 	// Create custom terminal (inline, inside the detail modal)
@@ -241,6 +242,32 @@ export default function SuperAdminWalletPage() {
 			setTerminalError('Network error — please try again');
 		} finally {
 			setAssigningTerminal(false);
+		}
+	};
+
+	const handleUnassignTerminal = async (terminal: Terminal) => {
+		if (!detailApp) return;
+		setUnassigningTerminalId(terminal.id);
+		setTerminalError('');
+		try {
+			const res = await csrfFetch(`/api/admin/wallet/pos-terminals/${terminal.id}/unassign`, {
+				method: 'PATCH',
+			});
+			const data = await res.json();
+			if (res.ok && data.success) {
+				await Promise.all([
+					refreshDetailApp(detailApp.id),
+					fetchUnassignedTerminals(),
+					fetchApplications(),
+				]);
+			} else {
+				setTerminalError(data.message || data.error || 'Failed to unassign terminal');
+			}
+		} catch (err) {
+			console.error('Unassign terminal error:', err);
+			setTerminalError('Network error — please try again');
+		} finally {
+			setUnassigningTerminalId(null);
 		}
 	};
 
@@ -581,18 +608,30 @@ export default function SuperAdminWalletPage() {
 									{detailApp.terminals.map((t) => (
 										<div
 											key={t.id}
-											className="flex items-center justify-between px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm"
+											className="flex items-center justify-between px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm gap-2"
 										>
-											<span className="flex items-center gap-2">
-												<CreditCard className="w-3.5 h-3.5 text-white/40" />
+											<span className="flex items-center gap-2 min-w-0">
+												<CreditCard className="w-3.5 h-3.5 text-white/40 shrink-0" />
 												<code className="text-white/80">{t.terminalId}</code>
 												{t.terminalModel && (
 													<span className="text-white/30 text-xs">{t.terminalModel}</span>
 												)}
 											</span>
-											<Badge variant="outline" className="text-xs">
-												{t.status}
-											</Badge>
+											<span className="flex items-center gap-2 shrink-0">
+												<Badge variant="outline" className="text-xs">
+													{t.status}
+												</Badge>
+												<button
+													onClick={() => handleUnassignTerminal(t)}
+													disabled={unassigningTerminalId === t.id}
+													className="text-xs text-red-300/80 hover:text-red-300 transition disabled:opacity-50 flex items-center gap-1"
+												>
+													{unassigningTerminalId === t.id && (
+														<Loader2 className="w-3 h-3 animate-spin" />
+													)}
+													Unassign
+												</button>
+											</span>
 										</div>
 									))}
 								</div>
