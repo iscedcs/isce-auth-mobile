@@ -12,6 +12,7 @@ import {
   Shield,
   ChevronLeft,
   CreditCard,
+  Wallet,
   Menu,
   X,
 } from "lucide-react";
@@ -31,6 +32,11 @@ const NAV_ITEMS = [
     label: "Devices",
     href: "/superadmin/devices",
     icon: CreditCard,
+  },
+  {
+    label: "Wallet",
+    href: "/superadmin/wallet",
+    icon: Wallet,
   },
   {
     label: "Settings",
