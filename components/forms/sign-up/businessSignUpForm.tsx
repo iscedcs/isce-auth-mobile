@@ -120,8 +120,14 @@ export default function BusinessSignUpForm({
 
   // ── Pre-fill email and referral ───────────────────────────────────────────
   useEffect(() => {
-    if (prefillEmail) {
-      form.setValue("email", prefillEmail, { shouldValidate: false });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const cleanEmail = prefillEmail?.trim();
+    if (
+      cleanEmail &&
+      emailRegex.test(cleanEmail) &&
+      !cleanEmail.includes("[object")
+    ) {
+      form.setValue("email", cleanEmail, { shouldValidate: false });
     }
     // Priority: prop from parent > URL param > sessionStorage fallback
     const fromUrl =

@@ -26,7 +26,14 @@ export default function SignInClient({ callbackUrl }: Props) {
 	const singleProduct = useSearchParams();
 
 	// Pre-fill email if redirected from sign-up email check
-	const initialEmail = singleProduct.get('email') ?? '';
+	const rawEmail = singleProduct.get('email') ?? '';
+	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	const initialEmail =
+		rawEmail &&
+		emailRegex.test(rawEmail.trim()) &&
+		!rawEmail.includes('[object')
+			? rawEmail.trim()
+			: '';
 
 	// Carousel State
 	const cardImages = [

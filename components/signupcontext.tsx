@@ -78,8 +78,13 @@ export default function SignUpClient({ callbackUrl }: Props) {
 	// Skip email step if ?email= is provided in the URL
 	useEffect(() => {
 		const urlEmail = singleProduct.get('email');
-		if (urlEmail) {
-			setPreEmail(urlEmail);
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (
+			urlEmail &&
+			emailRegex.test(urlEmail.trim()) &&
+			!urlEmail.includes('[object')
+		) {
+			setPreEmail(urlEmail.trim());
 			setEmailStep(false);
 		}
 	}, [singleProduct]);
