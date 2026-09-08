@@ -96,10 +96,18 @@ export function UserDetailsForm({
 
   // Pre-fill email from parent if provided (from email-first pre-step) and lock it
   useEffect(() => {
-    const emailToSet = prefillEmail || defaultValues?.email;
-    if (emailToSet) {
-      form.setValue("email", emailToSet);
+    const raw = prefillEmail || defaultValues?.email;
+    const cleanEmail = typeof raw === "string" ? raw.trim() : "";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (
+      cleanEmail &&
+      emailRegex.test(cleanEmail) &&
+      !cleanEmail.includes("[object")
+    ) {
+      form.setValue("email", cleanEmail);
       setIsEmailPrefilled(true);
+    } else {
+      setIsEmailPrefilled(false);
     }
   }, [prefillEmail, defaultValues?.email, form]);
 

@@ -59,56 +59,47 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 		}
 	}, [emailWatch]);
 
-	const prompt =
-		singleProduct.get('prompt') === 'login' ? '&prompt=login' : '';
-
 	// Pre-fill email from URL param (e.g. redirected from sign-up or sign-up email check)
 	useEffect(() => {
 		const urlEmail = singleProduct.get('email');
-		if (urlEmail) {
-			form.setValue('email', urlEmail);
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (
+			urlEmail &&
+			emailRegex.test(urlEmail.trim()) &&
+			!urlEmail.includes('[object')
+		) {
+			form.setValue('email', urlEmail.trim());
 			setIsLoading(false);
 		}
 	}, [singleProduct, form]);
 
-	// /** -------------------------------------------
-	//  * 🧹 2. STORE SAFE REDIRECT
-	//  * ------------------------------------------*/
-	// useEffect(() => {
-	//   const safe = getSafeRedirect(callbackUrl);
-	//   if (safe) sessionStorage.setItem("redirect_hint", safe);
-	// }, [callbackUrl]);
+	// Helper to construct auth URLs with consistent query params
+	const buildAuthUrl = (path: string, email?: string | null) => {
+		const params = new URLSearchParams();
+		if (callbackUrl) params.set('redirect', callbackUrl);
+		if (singleProduct.get('prompt') === 'login') params.set('prompt', 'login');
+		if (email) params.set('email', email);
+		const qs = params.toString();
+		return `${path}${qs ? `?${qs}` : ''}`;
+	};
 
-	// const getRedirect = () => {
-	//   const stored = sessionStorage.getItem("redirect_hint");
-	//   return getSafeRedirect(stored) || "/";
-	// };
-
-	const forgotPasswordHref =
-		callbackUrl ?
-			`/forgot-password?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
-		:	`/forgot-password${prompt}`;
+	const forgotPasswordHref = buildAuthUrl('/forgot-password');
 
 	const handleRedirectToForgotPassword = () => {
 		router.push(forgotPasswordHref);
 	};
 
-	const signUpHref =
-		callbackUrl ?
-			`/sign-up?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
-		:	`/sign-up${prompt}`;
+	const signUpHref = buildAuthUrl('/sign-up');
 
-	const handleRedirectCreateAccount = (email?: string) => {
-		if (email) {
-			const base =
-				callbackUrl ?
-					`/sign-up?redirect=${encodeURIComponent(callbackUrl)}${prompt}`
-				:	`/sign-up${prompt ? '?' + prompt.slice(1) : ''}`;
-			const url = `${base}${base.includes('?') ? '&' : '?'}email=${encodeURIComponent(email)}`;
-			router.push(url);
-		} else {
-			router.push(signUpHref);
-		}
+	const handleRedirectCreateAccount = (email?: unknown) => {
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		const validEmail =
+			typeof email === 'string' &&
+			emailRegex.test(email.trim()) &&
+			!email.includes('[object')
+				? email.trim()
+				: null;
+		router.push(buildAuthUrl('/sign-up', validEmail));
 	};
 
 	const handleDisplayPassword = () => {
@@ -147,7 +138,7 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 			{
 				email: authLogger.maskEmail(data.email),
 				callbackUrl: callbackUrl || 'none',
-				hasPrompt: !!prompt,
+				hasPrompt: singleProduct.get('prompt') === 'login',
 				userAgent:
 					typeof navigator !== 'undefined' ?
 						navigator.userAgent.slice(0, 60)
@@ -345,7 +336,7 @@ export default function MobileSignInForm({ callbackUrl }: Props) {
 					<AuthHeader
 						message="Don't have an account?"
 						loading={false}
-						onClick={handleRedirectCreateAccount}
+						onClick={() => handleRedirectCreateAccount()}
 						linkText='Create account'
 					/>
 				</div>
