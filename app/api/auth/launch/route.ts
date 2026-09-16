@@ -1,6 +1,22 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { authLogger } from '@/lib/auth-logger';
+import { isAllowedAppOrigin } from '@/lib/safe-redirect';
+
+/**
+ * The page the product's callback should send the user to next, kept on
+ * the product's own site. Anything that resolves to another origin —
+ * "//evil.com", "/\evil.com", an absolute URL elsewhere — becomes "/".
+ */
+function sameSitePath(requested: string, target: URL): string {
+	try {
+		const resolved = new URL(requested, target.origin);
+		if (resolved.origin === target.origin) {
+			return resolved.pathname + resolved.search + resolved.hash;
+		}
+	} catch {}
+	return '/';
+}
 
 /**
  * Server-side redirect to a product's auth callback.
@@ -8,6 +24,11 @@ import { authLogger } from '@/lib/auth-logger';
  * the isce-auth backend to generate a short-lived authorization
  * code and pass that instead. The product exchanges the code for
  * tokens server-to-server, so the JWT never appears in URLs.
+ *
+ * The code is only ever sent to an allowlisted ISCE app (see
+ * getAllowedAppOrigins in lib/safe-redirect.ts). Without that check,
+ * ?url=https://attacker.example would receive a live code for the
+ * signed-in user (ENG-373).
  *
  * Usage: GET /api/auth/launch?url=https://gada.isce.tech&redirect=/
  */
@@ -28,19 +49,38 @@ export async function GET(req: Request) {
 			);
 		}
 
+		let target: URL;
+		try {
+			target = new URL(productUrl);
+		} catch {
+			authLogger.warn('SSO:LAUNCH', 'Invalid url parameter');
+			return NextResponse.json(
+				{ error: 'Invalid url parameter' },
+				{ status: 400 },
+			);
+		}
+
+		if (!isAllowedAppOrigin(target)) {
+			authLogger.warn('SSO:LAUNCH', 'Rejected launch to an unrecognised app', {
+				origin: target.origin,
+			});
+			return NextResponse.json(
+				{ error: 'Unrecognised application' },
+				{ status: 400 },
+			);
+		}
+
 		// Extract the redirect destination from the productUrl.
 		// Products pass either:
 		//   (a) a full page URL like "http://localhost:3323/user/me"  → use pathname
 		//   (b) a callback URL with a redirect param like "…?redirect=/dashboard" → use that
-		let redirect = '/';
-		try {
-			const parsed = new URL(productUrl);
-			redirect =
-				parsed.searchParams.get('redirect') ||
-				(parsed.pathname !== '/' ?
-					parsed.pathname + parsed.search
-				:	'/');
-		} catch {}
+		const redirect = sameSitePath(
+			target.searchParams.get('redirect') ||
+				(target.pathname !== '/' ?
+					target.pathname + target.search
+				:	'/'),
+			target,
+		);
 
 		authLogger.log('SSO:LAUNCH', `Extracted redirect: ${redirect}`);
 
@@ -102,7 +142,6 @@ export async function GET(req: Request) {
 		});
 
 		// Build the callback URL with the code (not the JWT)
-		const target = new URL(productUrl);
 		const callback = new URL('/auth/callback', target.origin);
 		callback.searchParams.set('code', code);
 		callback.searchParams.set('redirect', redirect);
