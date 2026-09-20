@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { authLogger } from '@/lib/auth-logger';
 import { isAllowedAppOrigin } from '@/lib/safe-redirect';
+import { getLaunchClientId } from '@/lib/launch-clients';
 
 /**
  * The page the product's callback should send the user to next, kept on
@@ -111,6 +112,14 @@ export async function GET(req: Request) {
 			{ authApiBase: authApiBase || 'NOT_SET' },
 		);
 
+		// Bind the code to the app's OAuth client when one is configured, so a
+		// leaked code cannot be redeemed without that app's client secret.
+		const clientId = getLaunchClientId(target.origin);
+		authLogger.log('SSO:LAUNCH', 'Authorize client binding', {
+			origin: target.origin,
+			clientId: clientId ?? 'none (legacy)',
+		});
+
 		const elapsed = authLogger.startTimer();
 		const codeRes = await fetch(`${authApiBase}/auth/authorize`, {
 			method: 'POST',
@@ -118,6 +127,7 @@ export async function GET(req: Request) {
 				'Content-Type': 'application/json',
 				Authorization: `Bearer ${token}`,
 			},
+			body: JSON.stringify(clientId ? { clientId } : {}),
 		});
 
 		if (!codeRes.ok) {
