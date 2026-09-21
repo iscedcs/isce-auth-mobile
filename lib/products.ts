@@ -11,7 +11,7 @@ export const PRODUCTS = [
   },
   {
     id: "connect",
-    name: "Connect",
+    name: "LYNCON",
     url: "https://isce.app/dashboard",
     // url: "http://localhost:3154",
     icon: "contact",

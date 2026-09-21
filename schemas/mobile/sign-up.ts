@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 export const MOI = ["NIN", "CAC", "TIN", "BVN"] as const;
 
@@ -11,12 +12,13 @@ export const signUpForIndividualSchema = z.object({
     .string({ error: "Last name is required" })
     .min(2, { message: "Last name must be at least 2 characters" }),
 
+  // Stored in E.164 by <PhoneInput/>, so validation is country-agnostic:
+  // libphonenumber reads the country from the dial code on the value itself.
   phoneNumber: z
     .string({ error: "Phone number is required" })
-    .regex(
-      /^(070|080|081|090|091|071)\d{8}$/,
-      "Enter a valid Nigerian phone number (e.g. 08012345678)",
-    ),
+    .refine((value) => isValidPhoneNumber(value), {
+      message: "Enter a valid phone number for the selected country",
+    }),
 
   email: z
     .string({ error: "Email address is required" })

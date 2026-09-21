@@ -39,6 +39,7 @@ import { IoMdCheckmark, IoMdClose } from 'react-icons/io';
 import { LuEyeClosed } from 'react-icons/lu';
 import { MdEmail, MdLocationOn, MdOutlinePassword } from 'react-icons/md';
 import { toast } from 'sonner';
+import { PhoneInput } from '@/components/shared/phone-input';
 import z from 'zod';
 
 export type signUpValues = z.infer<typeof signUpForIndividualSchema>;
@@ -986,10 +987,13 @@ export default function IndividualSignUpForm({
 									</Label>
 									<FormControl>
 										<div className=' mt-[15px] items-center flex gap-5'>
-											<Input
-												required
-												{...field}
-												className='  text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0 '
+											<PhoneInput
+												value={field.value}
+												onChange={field.onChange}
+												onBlur={field.onBlur}
+												name={field.name}
+												className='w-full border-b'
+												inputClassName='text-[24px] font-extrabold placeholder:text-[24px] placeholder:font-extrabold py-2'
 											/>
 										</div>
 									</FormControl>

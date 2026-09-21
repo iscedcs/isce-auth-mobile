@@ -39,6 +39,7 @@ import { MdOutlineDateRange, MdOutlineLocationOn } from "react-icons/md";
 import { MdOutlineBusinessCenter } from "react-icons/md";
 import { TbLoader2 } from "react-icons/tb";
 import { toast } from "sonner";
+import { PhoneInput } from "@/components/shared/phone-input";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -646,13 +647,13 @@ export default function BusinessSignUpForm({
                     Phone number*
                   </Label>
                   <FormControl>
-                    <Input
-                      type="tel"
-                      required
-                      autoComplete="tel"
-                      className="text-5 outline-0 rounded-none border-l-0 placeholder:text-[24px] placeholder:font-extrabold border-r-0 border-t-0"
-                      placeholder="e.g. 08012345678"
-                      {...field}
+                    <PhoneInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      className="border-b"
+                      inputClassName="text-[24px] font-extrabold placeholder:text-[24px] placeholder:font-extrabold py-2"
                     />
                   </FormControl>
                   <FormMessage />

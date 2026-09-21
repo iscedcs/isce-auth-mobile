@@ -1,4 +1,5 @@
 import z from "zod";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 export const userTypeSchema = z.object({
   userType: z.enum(["USER", "BUSINESS_USER"], {
@@ -25,10 +26,12 @@ export const baseUserDetailsSchema = z.object({
     })
     .max(50, "lastname must be less than 50 characters"),
 
+  // See schemas/mobile/sign-up.ts — value arrives as E.164 from <PhoneInput/>.
   phoneNumber: z
     .string()
-    .min(10, "Phone number must be at least 10 digits")
-    .regex(/^\+?[\d\s-()]+$/, "Please enter a valid phone number"),
+    .refine((value) => isValidPhoneNumber(value), {
+      message: "Please enter a valid phone number for the selected country",
+    }),
 
   email: z
     .string()
