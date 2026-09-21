@@ -41,6 +41,7 @@ import { MdEmail, MdLocationOn, MdOutlinePassword } from 'react-icons/md';
 import { toast } from 'sonner';
 import { PhoneInput } from '@/components/shared/phone-input';
 import z from 'zod';
+import { DRAFT_KEYS, hasContent, loadDraft, saveDraft } from '@/lib/signup-draft';
 
 export type signUpValues = z.infer<typeof signUpForIndividualSchema>;
 export type otpValue = z.infer<typeof otpSchema>;
@@ -86,6 +87,9 @@ export default function IndividualSignUpForm({
 	const STEP_SIZE = 15;
 	const FIRST_STEP = 2 * STEP_SIZE; // 30
 	const [maxAllowedStep, setMaxAllowedStep] = useState(FIRST_STEP);
+	const [draftRestored, setDraftRestored] = useState(false);
+
+
 
 	const form = useForm<signUpValues>({
 		resolver: zodResolver(signUpForIndividualSchema),
@@ -112,6 +116,34 @@ export default function IndividualSignUpForm({
 		},
 		mode: 'all',
 	});
+
+	// ─── Draft restore / persist (ENG-423) ────────────────────────────────────
+	// The password is never persisted, and the OTP/password screens cannot be
+	// completed without it, so a draft never restores past the password step.
+	useEffect(() => {
+		const draft = loadDraft<Partial<signUpValues>>(DRAFT_KEYS.mobileIndividual, [
+			'dob',
+		]);
+		if (draft && hasContent(draft.values)) {
+			form.reset({ ...form.getValues(), ...draft.values });
+			const target = Math.min(draft.step || FIRST_STEP, STEP_SIZE * 4);
+			setStep(target);
+			setStepNumber(target / STEP_SIZE);
+			setMaxAllowedStep(target);
+		}
+		setDraftRestored(true);
+		// Restore runs once on mount.
+			}, []);
+
+	useEffect(() => {
+		if (!draftRestored) return;
+		const sub = form.watch((values) => {
+			if (hasContent(values)) {
+				saveDraft(DRAFT_KEYS.mobileIndividual, values, step);
+			}
+		});
+		return () => sub.unsubscribe();
+	}, [draftRestored, form, step]);
 
 	const [isReferralDisabled, setIsReferralDisabled] = useState(false);
 	// When email comes from the parent's pre-step, lock it so the user can't

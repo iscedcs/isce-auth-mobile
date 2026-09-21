@@ -40,6 +40,7 @@ import { MdOutlineBusinessCenter } from "react-icons/md";
 import { TbLoader2 } from "react-icons/tb";
 import { toast } from "sonner";
 import { PhoneInput } from "@/components/shared/phone-input";
+import { DRAFT_KEYS, hasContent, loadDraft, saveDraft } from "@/lib/signup-draft";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -118,6 +119,35 @@ export default function BusinessSignUpForm({
   const sp = useSearchParams();
 
   const [isReferralDisabled, setIsReferralDisabled] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // ─── Draft restore / persist (ENG-423) ──────────────────────────────────
+  // Password and ID number are never written; see lib/signup-draft.ts.
+  useEffect(() => {
+    const draft = loadDraft<Partial<businessSignUpValues>>(
+      DRAFT_KEYS.mobileBusiness,
+      ["dob"],
+    );
+    if (draft && hasContent(draft.values)) {
+      form.reset({ ...form.getValues(), ...draft.values });
+      const target = Math.min(draft.step || STEP_SIZE * 2, STEP_SIZE * 4);
+      setStep(target);
+      setStepNumber(target / STEP_SIZE);
+    }
+    setDraftRestored(true);
+    // Restore runs once on mount.
+      }, []);
+
+  useEffect(() => {
+    if (!draftRestored) return;
+    const sub = form.watch((values) => {
+      if (hasContent(values)) {
+        saveDraft(DRAFT_KEYS.mobileBusiness, values, step);
+      }
+    });
+    return () => sub.unsubscribe();
+  }, [draftRestored, form, step]);
+
 
   // ── Pre-fill email and referral ───────────────────────────────────────────
   useEffect(() => {
