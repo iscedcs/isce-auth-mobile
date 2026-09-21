@@ -47,42 +47,12 @@ const individualUserDetailsSchema = baseUserDetailsSchema.extend({
   dob: z.string().optional(),
 });
 
-const FREE_EMAIL_DOMAINS = [
-  "gmail.com",
-  "yahoo.com",
-  "yahoo.co.uk",
-  "hotmail.com",
-  "hotmail.co.uk",
-  "outlook.com",
-  "aol.com",
-  "icloud.com",
-  "mail.com",
-  "zoho.com",
-  "protonmail.com",
-  "proton.me",
-  "yandex.com",
-  "live.com",
-  "msn.com",
-  "gmx.com",
-];
-
 const businessUserDetailsSchema = baseUserDetailsSchema.extend({
   userType: z.literal("BUSINESS_USER"),
   businessName: z.string().optional(),
   businessEmail: z
     .string()
     .email("Enter a valid business email address")
-    .refine(
-      (email) => {
-        if (!email) return true;
-        const domain = email.split("@")[1]?.toLowerCase().trim();
-        return domain ? !FREE_EMAIL_DOMAINS.includes(domain) : false;
-      },
-      {
-        message:
-          "Business email must be a business domain and not a normal email provider (e.g. Gmail, Yahoo)",
-      }
-    )
     .optional(),
   identificationType: z.string().optional(),
   idNumber: z.string().optional(),
@@ -97,18 +67,7 @@ export const businessOnlyDetailsSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   businessEmail: z
     .string()
-    .email("Enter a valid business email address")
-    .refine(
-      (email) => {
-        if (!email) return true;
-        const domain = email.split("@")[1]?.toLowerCase().trim();
-        return domain ? !FREE_EMAIL_DOMAINS.includes(domain) : false;
-      },
-      {
-        message:
-          "Business email must be a business domain and not a normal email provider (e.g. Gmail, Yahoo)",
-      }
-    ),
+    .email("Enter a valid business email address"),
   identificationType: z.string().min(1, "Please select an identification type"),
   idNumber: z.string().min(1, "ID number is required"),
   position: z.string().optional(),
@@ -143,18 +102,7 @@ export const companyDetailsSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   businessEmail: z
     .string()
-    .email("Enter a valid business email address")
-    .refine(
-      (email) => {
-        if (!email) return true;
-        const domain = email.split("@")[1]?.toLowerCase().trim();
-        return domain ? !FREE_EMAIL_DOMAINS.includes(domain) : false;
-      },
-      {
-        message:
-          "Business email must be a business domain and not a normal email provider (e.g. Gmail, Yahoo)",
-      }
-    ),
+    .email("Enter a valid business email address"),
   businessAddress: z.string().min(1, "Business address is required"),
   position: z.string().optional(),
 });
