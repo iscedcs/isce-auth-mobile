@@ -142,9 +142,17 @@ export default function IndividualSignUpForm({
 
 	// Pre-fill email from parent if provided (e.g. from email-first pre-step)
 	useEffect(() => {
-		if (prefillEmail) {
-			form.setValue('email', prefillEmail);
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		const cleanEmail = prefillEmail?.trim();
+		if (
+			cleanEmail &&
+			emailRegex.test(cleanEmail) &&
+			!cleanEmail.includes('[object')
+		) {
+			form.setValue('email', cleanEmail);
 			setIsEmailPrefilled(true);
+		} else {
+			setIsEmailPrefilled(false);
 		}
 	}, [prefillEmail, form]);
 	const email = form.watch('email');

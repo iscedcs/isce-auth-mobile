@@ -12,7 +12,7 @@ export const PRODUCTS = [
   {
     id: "connect",
     name: "Connect",
-    url: "http://isce.app/dashboard",
+    url: "https://isce.app/dashboard",
     // url: "http://localhost:3154",
     icon: "contact",
     active: true,

@@ -58,8 +58,13 @@ export default function SignUpMobile({
   // If an email was passed via URL param, pre-fill and skip the email step
   useEffect(() => {
     const urlEmail = singleProduct.get("email");
-    if (urlEmail) {
-      setPreEmail(urlEmail);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (
+      urlEmail &&
+      emailRegex.test(urlEmail.trim()) &&
+      !urlEmail.includes("[object")
+    ) {
+      setPreEmail(urlEmail.trim());
       setEmailStep(false);
     }
   }, [singleProduct]);
