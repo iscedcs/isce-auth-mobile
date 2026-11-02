@@ -83,8 +83,6 @@ const CATALOGUE: {
   {
     id: "connect",
     name: "LYNCON",
-    url: "https://isce.app/dashboard",
-    // url: "http://localhost:3154",
     icon: "contact",
     active: true,
     shownIn: ["local", "test", "production"],
