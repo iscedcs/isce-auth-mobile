@@ -15,7 +15,11 @@ export type AppEnv = "local" | "test" | "production";
 
 export function getAppEnv(): AppEnv {
   const override = process.env.NEXT_PUBLIC_APP_ENV?.trim().toLowerCase();
-  if (override === "local" || override === "test" || override === "production") {
+  if (
+    override === "local" ||
+    override === "test" ||
+    override === "production"
+  ) {
     return override;
   }
 
@@ -78,7 +82,9 @@ const CATALOGUE: {
   },
   {
     id: "connect",
-    name: "Connect",
+    name: "LYNCON",
+    url: "https://isce.app/dashboard",
+    // url: "http://localhost:3154",
     icon: "contact",
     active: true,
     shownIn: ["local", "test", "production"],

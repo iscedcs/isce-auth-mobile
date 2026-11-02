@@ -28,6 +28,13 @@ import { PasswordCreationForm } from './forms/auth/desktop/password-creation-for
 import { UserDetailsForm } from './forms/auth/desktop/user-details-form';
 import { PasswordResetModal } from './forms/auth/password-reset-modal';
 import { Button } from './ui/button';
+import {
+	DRAFT_KEYS,
+	clearAllSignupDrafts,
+	hasContent,
+	loadDraft,
+	saveDraft,
+} from '@/lib/signup-draft';
 
 type SignupData = {
 	userType?: UserTypeFormData;
@@ -111,6 +118,39 @@ export default function SignUpClient({ callbackUrl }: Props) {
 	useEffect(() => {
 		if (safe) sessionStorage.setItem('redirect_hint', safe);
 	}, [safe]);
+
+	// ─── Draft restore / persist (ENG-423) ─────────────────────────────────────
+	// Guards against restoring into a state the flow cannot complete: the
+	// password is deliberately never persisted, and handleOtpVerificationSubmit
+	// needs it to create the account. So we never restore past the
+	// password-creation step, even if the user got further before refreshing.
+	const [draftRestored, setDraftRestored] = useState(false);
+
+	useEffect(() => {
+		const draft = loadDraft<SignupData>(DRAFT_KEYS.desktop);
+		if (draft && hasContent(draft.values)) {
+			const isBusinessDraft =
+				(draft.values.userType?.userType || 'USER') === 'BUSINESS_USER';
+			const passwordStep = isBusinessDraft ? 6 : 3;
+
+			setSignupData(draft.values);
+			setCurrentStep(Math.min(draft.step || 1, passwordStep));
+			setEmailStep(false);
+			if (draft.values.userDetails?.email) {
+				setPreEmail(draft.values.userDetails.email);
+			}
+		}
+		setDraftRestored(true);
+	}, []);
+
+	useEffect(() => {
+		// Don't write until the restore pass has run, or the initial empty
+		// state would overwrite the draft we are about to read.
+		if (!draftRestored) return;
+		if (!hasContent(signupData)) return;
+		saveDraft(DRAFT_KEYS.desktop, signupData, currentStep);
+	}, [draftRestored, signupData, currentStep]);
+
 
 	function getRedirect() {
 		const fromStorage =
@@ -303,6 +343,12 @@ export default function SignUpClient({ callbackUrl }: Props) {
 				setIsLoading(false);
 				return;
 			}
+
+			// The account now exists, so the draft has served its purpose.
+			// Cleared here rather than after sign-in: the login step below
+			// can fail and bounce to /sign-in, and a surviving draft would
+			// repopulate a signup for an account that already exists.
+			clearAllSignupDrafts();
 
 			// Step 3: Sign in after account creation
 			const login = await AuthService.signIn(

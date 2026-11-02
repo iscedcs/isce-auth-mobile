@@ -172,8 +172,9 @@ export function PasswordCreationForm({
 
           <Button
             type="submit"
+            disabled={isLoading}
             className="w-full rounded-[12px] font-semibold py-[24px]">
-            Login
+            {isLoading ? "Sending code..." : "Continue"}
           </Button>
         </form>
       </Form>

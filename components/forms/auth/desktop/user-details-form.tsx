@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UserDetailsFormData, userDetailsSchema } from "@/schemas/desktop";
+import { PhoneInput } from "@/components/shared/phone-input";
 
 interface UserDetailsFormProps {
   onSubmit: (data: UserDetailsFormData) => void;
@@ -176,10 +177,15 @@ export function UserDetailsForm({
                   Enter your phone number
                 </FormLabel>
                 <FormControl>
-                  <Input
-                    {...field}
+                  <PhoneInput
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
                     placeholder="Phone number"
-                    className="bg-transparent border-0 border-b border-gray-600 rounded-none px-0 py-3 text-white placeholder:text-gray-500 focus:border-white focus-visible:ring-0"
+                    className="border-0 border-b border-gray-600 py-3"
+                    inputClassName="text-white placeholder:text-gray-500"
+                    triggerClassName="text-white hover:bg-white/10"
                   />
                 </FormControl>
                 <FormMessage />
