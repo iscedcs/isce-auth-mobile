@@ -107,15 +107,16 @@ const CATALOGUE: {
   },
   {
     id: "wallet",
-    name: "Fiscus Wallet",
+    name: "Fiscus",
     icon: "wallet",
     active: true,
-    // Deployed but not launched — visible on test and local only.
-    shownIn: ["local", "test"],
+    // Live. Being listed here is also what lets sign-in send people back
+    // to wallet.isce.app; while hidden, they landed on this dashboard.
+    shownIn: ["local", "test", "production"],
     urls: {
       local: "http://localhost:3004",
       test: "https://test-wallet.isce.app",
-      production: "https://wallet.isce.app",
+      production: "https://wallet.isce.app/dashboard",
     },
   },
 ];
