@@ -17,6 +17,10 @@ export async function POST(req: Request) {
         password: raw.password,
         confirmPassword: raw.confirmpassword ?? raw.password,
       },
+      // The mobile form sends null for an empty optional field; the schema's
+      // .optional() only accepts a missing value, so null failed the parse.
+      referralCode: raw.referralCode ?? undefined,
+      position: raw.position ?? undefined,
     };
 
     const b = extendedSignUpSchema.parse(normalized);
