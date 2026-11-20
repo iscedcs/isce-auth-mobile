@@ -32,6 +32,10 @@ export async function POST(req: Request) {
         password: raw.password,
         confirmPassword: raw.confirmpassword,
       },
+      // The mobile forms send null for an empty optional field; the schema's
+      // .optional() only accepts a missing value, so null failed the parse.
+      referralCode: raw.referralCode ?? undefined,
+      position: raw.position ?? undefined,
     };
 
     if (userType === "USER") {
