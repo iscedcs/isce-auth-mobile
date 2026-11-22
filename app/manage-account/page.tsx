@@ -37,7 +37,6 @@ export default function ManageAccountPage() {
 							'Saved contacts and meeting links',
 							'Uploaded files and gallery items',
 							'Wallet payment details and linked bank accounts',
-							'Transaction history and escrow records',
 							'All connected device tokens and sessions',
 						].map((item) => (
 							<li
@@ -49,6 +48,13 @@ export default function ManageAccountPage() {
 							</li>
 						))}
 					</ul>
+					<p className='text-xs text-gray-500 leading-relaxed'>
+						If you use the Fiscus wallet, it must be empty, with no
+						payment, escrow or dispute still open, before your account
+						can be deleted. Fiscus is a payments service, so it keeps
+						your transaction records for as long as the law requires
+						(at least five years), and uses them for nothing else.
+					</p>
 					<p className='text-xs text-gray-500 leading-relaxed'>
 						Account deletion is permanent and cannot be undone.
 						Before deleting, you have the option to export a copy
